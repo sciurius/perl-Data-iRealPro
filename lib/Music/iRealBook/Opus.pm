@@ -91,6 +91,16 @@ sub irealbook {
 		$beats = 0;
 		next;
 	    }
+	    if ( $el->{is_a} eq "coda" ) {
+		my $space = '';
+		if ( $ir =~ /^(.*) $/ ) {
+		    $ir = $1;
+		    $space = ' ';
+		}
+		$maybecomma->();
+		$ir .= "Q" . $space;
+		next;
+	    }
 	}
 	$ir .= "]";
     }
@@ -104,9 +114,11 @@ sub irealbook {
 		"n",
 		$self->key // "C",
 		$ir,
-		"",		# actual style
-		$self->tempo,
-		"" );
+		# Do not append -- causes import failure
+		# "",		# actual style
+		# $self->tempo,
+		# "",
+	      );
 
     $ir =~ s/([^A-Za-z0-9\-_.!~*'()])/sprintf("%%%02x", ord($1))/ge
       unless $type eq "plain";
@@ -173,6 +185,8 @@ sub irealb_obfuscate {
 
 sub irealb {
     my ( $self, %args ) = @_;
+
+    die("irealb output needs updating");
 
     my $type = delete( $args{type} ) // "html";
 

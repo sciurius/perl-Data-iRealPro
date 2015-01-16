@@ -11,7 +11,7 @@ Music::iRealBook - Programmatically build songs for iReal-B
 
 =cut
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 =head1 SYNOPSIS
 
