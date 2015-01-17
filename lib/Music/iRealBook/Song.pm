@@ -43,7 +43,7 @@ use Music::iRealBook::Opus;
 use Music::ChordBot::Opus::Section;
 
 our @EXPORT = qw( song chord composer section timesig tempo Coda
-		  style key output irealbook irealb );
+		  style key space output irealbook irealb );
 use base 'Exporter';
 
 my $song;
@@ -131,17 +131,27 @@ sub chord($) {
 }
 
 sub timesig($$) {
+    my ( $bpm, $div ) = @_;
+    $bpm ||= 4;
+    $div ||= 4;
+
+    # If we're in a section, add a timesig control...
     if ( @{ $section->chords } ) {
-	$section->add_timesig( @_ );
+	$section->add_control( "timesig", $bpm, $div );
     }
+    # ... otherwise change the section style time sig.
     else {
-	$section->{data}->{style}->{beats} = shift() // 4;
-	$section->{data}->{style}->{divider} = shift() // 4;
+	$section->{data}->{style}->{beats}   = $bpm;
+	$section->{data}->{style}->{divider} = $div;
     }
 }
 
 sub Coda {
-    $section->add_coda;
+    $section->add_control("coda");
+}
+
+sub space(;$) {
+    $section->add_control("space", $_[0]);
 }
 
 # Automatically export the song at the end of the program.

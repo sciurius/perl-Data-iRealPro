@@ -8,6 +8,7 @@ use 5.010;
 use utf8;
 use parent qw( Music::ChordBot::Opus );
 use Music::iRealBook;
+use Carp qw( croak );
 
 =head2 composer I<title>
 
@@ -47,9 +48,15 @@ sub irealbook {
 	$ir .= "," if $ir =~ /[[:alpha:]]$/i;
     };
 
+    my $sysbeats = 0;
+
     foreach my $section ( @{ $self->data->{sections} } )  {
 	my $beatspermeasure = $section->{style}->{beats} // 4;
 	my $beatstype = $section->{style}->{divider} // 4;
+
+	$ir .= " " x (16 - $sysbeats) if $sysbeats;
+	$sysbeats = 0;
+
 	$ir .= "[" . timesig( $beatspermeasure, $beatstype );
 	if ( $section->{name} ) {
 	    $ir .= ( $_namemap{ $section->{name} }
@@ -80,14 +87,16 @@ sub irealbook {
 			$did++;
 		    }
 		    $beats++;
+		    $sysbeats++;
+		    $sysbeats = 0 if $sysbeats == 16;
 		}
 		next;
 	    }
 	    if ( $el->{is_a} eq "timesig" ) {
-		$beatspermeasure = $el->{beatspermeasure};
-		$beatstype       = $el->{beatstype};
+		( $beatspermeasure, $beatstype ) = @{ $el->{param} };
+		$ir .= "|" unless $ir =~ /[|\[]$/;
 		$maybecomma->();
-		$ir .= "|" . timesig( $beatspermeasure, $beatstype );
+		$ir .= timesig( $beatspermeasure, $beatstype );
 		$beats = 0;
 		next;
 	    }
@@ -101,8 +110,23 @@ sub irealbook {
 		$ir .= "Q" . $space;
 		next;
 	    }
+	    if ( $el->{is_a} eq "space" ) {
+		my $space = $el->{param}->[0] // 16 - $sysbeats;
+		if ( $ir =~ /^(.*)\|$/ ) {
+		    $ir = $1;
+		}
+		$space = 0 if $space == 16;
+		$ir .= "]" . ( " " x $space ) . "[";
+		$sysbeats = 0;
+		next;
+	    }
 	}
-	$ir .= "]";
+	if ( $ir =~ /^(.*)\[$/ ) {
+	    $ir = $1;
+	}
+	else {
+	    $ir .= "]";
+	}
     }
 
     $ir =~ s/\]$/Z/;		# End bar
@@ -151,6 +175,16 @@ EOD
 
 sub timesig {
     my ( $beatspermeasure, $beatstype ) = @_;
+
+    # Invalid time sigs will crash iRealPro in a nasty way.
+    croak("Invalid time signature $beatspermeasure/$beatstype")
+      unless ( $beatstype == 2 && $beatspermeasure >= 2 && $beatspermeasure <= 3 )
+	|| ( $beatstype == 4 && $beatspermeasure >= 2 && $beatspermeasure <= 7 )
+	|| ( $beatstype == 8 && ( $beatspermeasure == 6
+				  || $beatspermeasure == 7
+				  || $beatspermeasure == 9
+				  || $beatspermeasure == 12 ) );
+
     my $r = "T" . $beatspermeasure . $beatstype;
     $r =~ s/T128$/T12/;	# 12/8 -> T12
     return $r;
