@@ -1,13 +1,13 @@
 #! perl
 
-package Music::iRealBook;
+package Music::iRealPro;
 
 use warnings;
 use strict;
 
 =head1 NAME
 
-Music::iRealBook - Programmatically build songs for iReal-B
+Music::iRealPro - Programmatically build songs for iReal-B
 
 =cut
 
@@ -17,7 +17,7 @@ our $VERSION = '0.03';
 
 Song API (simple):
 
-  use Music::iRealBook::Song;
+  use Music::iRealPro::Song;
 
   # Define a song
   song "Funky Perl";
@@ -41,16 +41,16 @@ Song API (explicit chords):
 
 Opus API (powerful):
 
-  use Music::iRealBook::Opus;
-  use Music::iRealBook::Opus::Section;
+  use Music::iRealPro::Opus;
+  use Music::iRealPro::Opus::Section;
 
   # The song.
-  my $song = Music::iRealBook::Opus->new(
+  my $song = Music::iRealPro::Opus->new(
       name => "Funky Perl", composer = "Me", tempo => 120,
       style => "Medium Swing", key => "Dm" );
 
   # One section.
-  my $section = Music::iRealBook::Opus::Section->new(
+  my $section = Music::iRealPro::Opus::Section->new(
       name => "Funky Section" );
 
   $section->add_chord( "D Min7 4" );
@@ -80,7 +80,7 @@ saxophone / theremin solos.
 iReal-B can import songs in one of two textual format formats. The
 'irealbook' format is easily readable and straightforward. The
 official 'irealb' format is proprietary and uses some form of
-scrambling to hide the contents. Music::iRealBook provides a set of
+scrambling to hide the contents. Music::iRealPro provides a set of
 modules that can be used to programmatically build songs and produce
 the in irealbook formatted data suitable for import into iReal-B.
 
@@ -88,7 +88,7 @@ iReal-B web site: L<http://www.irealb.com>.
 
 Web editor: L<http://www.irealb.com/editor>.
 
-Music::iRealBook is built on top op the Music::ChordBot toolkit.
+Music::iRealPro is built on top op the Music::ChordBot toolkit.
 
 =head1 AUTHOR
 
@@ -97,16 +97,16 @@ Johan Vromans, C<< <jv at cpan.org> >>
 =head1 BUGS
 
 Please report any bugs or feature requests to C<bug-music-irealbook at rt.cpan.org>, or through
-the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Music-iRealBook>.  I will be notified, and then you'll
+the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Music-iRealPro>.  I will be notified, and then you'll
 automatically be notified of progress on your bug as I make changes.
 
 =head1 SUPPORT
 
 You can find documentation for this module with the perldoc command.
 
-    perldoc Music::iRealBook
-    perldoc Music::iRealBook::Song
-    perldoc Music::iRealBook::Opus
+    perldoc Music::iRealPro
+    perldoc Music::iRealPro::Song
+    perldoc Music::iRealPro::Opus
 
 =head1 ACKNOWLEDGEMENTS
 

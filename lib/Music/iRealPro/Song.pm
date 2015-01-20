@@ -1,17 +1,17 @@
 #! perl
 
-package Music::iRealBook::Song;
+package Music::iRealPro::Song;
 
 use strict;
 use warnings;
 
 =head1 NAME
 
-Music::iRealBook::Song - Generate iRealB songs.
+Music::iRealPro::Song - Generate iRealPro songs.
 
 =head1 SYNOPSIS
 
-    use Music::iRealBook::Song;
+    use Music::iRealPro::Song;
     song "All Of Me";
     composer "Gerard Marks";
     tempo 105;
@@ -30,16 +30,16 @@ Music::iRealBook::Song - Generate iRealB songs.
 
 =head1 DESCRIPTION
 
-Music::iRealBook::Song exports a number of subroutines that can be
-used to construct an iRealb song. Upon program termination, the song
+Music::iRealPro::Song exports a number of subroutines that can be
+used to construct an iRealPro song. Upon program termination, the song
 is written out to standard output in text format, suitable for import
-into the iRealB app.
+into the iRealPro app.
 
 =cut
 
 our $VERSION = 0.01;
 
-use Music::iRealBook::Opus;
+use Music::iRealPro::Opus;
 use Music::ChordBot::Opus::Section;
 
 our @EXPORT = qw( song chord composer section timesig tempo Coda
@@ -59,7 +59,7 @@ Starts a new song with the given title.
 
 sub song($) {
     _export() if $song;
-    $song = Music::iRealBook::Opus->new( name => shift );
+    $song = Music::iRealPro::Opus->new( name => shift );
     undef $section;
 }
 
@@ -126,7 +126,7 @@ C<"Bm/A"> must be entered as C<"B/A Min"> or C<"B Min/A">.
 
 =cut
 
-sub chord($) {
+sub chord($;$$) {
     $section->add_chord( @_ );
 }
 
@@ -164,7 +164,7 @@ sub END {
 Selects the type of output to be generated.
 
 B<html> (default): Generates a simple HTML page that provides the song.
-This is the way songs are imported into iReal-B.
+This is the way songs are imported into iRealPro.
 
 B<text>: Generates the text of the song only. For convenience, the
 text is url-escaped so it can be pasted into the web editor.
@@ -221,6 +221,7 @@ The subroutine name is the key of the chord, optionally followed by a
 chord modifier. So C<C> is C major, C<Cm> is C minor, and so on.
 
 Chord keys are A B C D E F G Ab Bb Db Eb Gb Ais Cis Dis Fis Gis.
+Also allowed are flat variants As Bes Des Es Ges.
 
 Modifiers are m 7 m7 maj7 9 11 13 aug 7b5 m7b5 dim dim7.
 
@@ -238,6 +239,7 @@ sub _chord {
 
 for my $key ( qw( A B C D E F G
 		  Ab Bb Db Eb Gb
+		  As Bes Des Es Ges
 		  Ais Cis Dis Fis Gis
 	    ) ) {
     my $k2 = $key =~ /^(.)is$/ ? "$1#" : $key;
@@ -275,11 +277,11 @@ push( @EXPORT, "S", "NC" );
 
 There is currently NO VALIDATION of argument values. Illegal values
 will result in program crashes and songs that cannot be imported, or
-played, by iRealB.
+played, by iRealPro.
 
 =head1 AUTHOR, COPYRIGHT & LICENSE
 
-See L<Music::iRealBook>.
+See L<Music::iRealPro>.
 
 =cut
 

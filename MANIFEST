@@ -2,8 +2,8 @@ Changes
 MANIFEST
 Makefile.PL
 README
-lib/Music/iRealBook.pm
-lib/Music/iRealBook/Opus.pm
-lib/Music/iRealBook/Song.pm
+lib/Music/iRealPro.pm
+lib/Music/iRealPro/Opus.pm
+lib/Music/iRealPro/Song.pm
 t/00-load.t
 t/31-song.t
