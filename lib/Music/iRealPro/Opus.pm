@@ -144,7 +144,7 @@ sub irealbook {
 		# "",
 	      );
 
-    $ir =~ s/([^A-Za-z0-9\-_.!~*'()])/sprintf("%%%02x", ord($1))/ge
+    $ir =~ s/([^A-Za-z0-9\-_.!~*\'()])/sprintf("%%%02x", ord($1))/ge
       unless $type eq "plain";
     $ir = "irealbook://" . $ir;
 
@@ -189,6 +189,31 @@ sub timesig {
     $r =~ s/T128$/T12/;	# 12/8 -> T12
     return $r;
 }
+
+use Music::ChordBot::Opus::Section;
+use Music::ChordBot::Opus::Section::Chord;
+
+no warnings 'redefine';
+
+sub Music::ChordBot::Opus::Section::add_chord {
+    my ( $self, $chord ) = @_;
+
+    my $ok = 0;
+    my $data;
+
+    eval { $data = $chord->{data};
+	   push( @{$self->{data}->{chords}},
+		 $data ); $ok = 1 };
+    return if $ok;
+
+    shift;
+
+    $data = Music::ChordBot::Opus::Section::Chord->new(@_)->data;
+
+    push( @{$self->{data}->{chords}}, $data );
+}
+
+use warnings 'redefine';
 
 # Obfuscate/deobfuscate irealb pro format.
 sub irealb_obfuscate {
