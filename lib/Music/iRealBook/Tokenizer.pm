@@ -30,9 +30,22 @@ sub tokenize {
     my $time_d = 0;
     my $time_n = 0;
     my $measures = 0;
+    my $multiplier = 1;
+
+    my $barcheck = sub {
+	unless ( $bpm == $time_d ) {
+	    if ( $measures == 0 && ( $time_d % $bpm ) == 0 ) {
+		$multiplier = $time_d / $bpm;
+	    }
+	    else {
+		push( @d, "barcheck failed at $bpm/$time_n" );
+	    }
+	}
+    };
 
     while ( length($_) ) {
 	if ( /^\{/p ) {
+	    push( @d, "start section" ) unless @d;
 	    push( @d, "start repeat" );
 	}
 	elsif ( /^\}/p ) {
@@ -42,8 +55,7 @@ sub tokenize {
 	    push( @d, "start section" );
 	}
 	elsif ( /^\]/p ) {
-	    push( @d, "barcheck failed at $bpm/$time_n" )
-	      unless $bpm == $time_d;
+	    $barcheck->();
 	    $bpm = 0;
 	    $measures++;
 	    push( @d, "end section" );
@@ -54,26 +66,37 @@ sub tokenize {
 	elsif ( /^T(\d)(\d)/p ) {
 	    push( @d, "time " . _timesig( $time_d = $1, $time_n = $2) );
 	}
-	elsif ( /^[sl]?([ABCDEFG][-b#0-9]*)/p ) {
-	    push( @d, "chord $1 1" );
+	elsif ( /^([sl])/p ) {
+	    push( @d, $1 eq "s" ? "small" : "large" );
 	    $bpm++;
 	}
-	elsif ( /^ +x\s*/p ) {
+	elsif ( /^([ABCDEFGW][-^bo#0-9]*)(?:\/[ABCDEFGW][b#]?)?(?:\(.*?\))?/p ) {
+	    push( @d, "chord $1 $multiplier" );
+	    $bpm++;
+	}
+	elsif ( /^n/p ) {
+	    push( @d, "chord NC $multiplier" );
+	    $bpm++;
+	}
+	elsif ( /^\s*x\s*/p ) {
 	    push( @d, "measure repeat" );
+	    $bpm = $time_d;
+	}
+	elsif ( /^\s*%\s*/p ) {
+	    push( @d, "?repeat" );
 	    $bpm = $time_d;
 	}
 	elsif ( /^ /p ) {
 	    if ( $d[-1] =~ /^chord\s+(\S+)\s+(\d+)$/ ) {
-		$d[-1] = join( " ", "chord", $1, 1+$2 );
-		$bpm++;
+		$d[-1] = join( " ", "chord", $1, $multiplier + $2 );
+		$bpm += $multiplier;
 	    }
 	    else {
 		push( @d, "space" );
 	    }
 	}
 	elsif ( /^\|/p ) {
-	    push( @d, "barcheck failed at $bpm/$time_n" )
-	      unless $bpm == $time_d;
+	    $barcheck->();
 	    $bpm = 0;
 	    $measures++;
 	    push( @d, "bar" );
@@ -86,6 +109,24 @@ sub tokenize {
 	elsif ( /^Z/p ) {
 	    push( @d, "end" );
 	    last;
+	}
+	elsif ( /^p/p ) {
+	    push( @d, "slash repeat" );
+	}
+	elsif ( /^Q/p ) {
+	    push( @d, "coda" );
+	}
+	elsif ( /^f/p ) {
+	    push( @d, "fermata" );
+	}
+	elsif ( /^S/p ) {
+	    push( @d, "segno" );
+	}
+	elsif ( /^Y/p ) {
+	    push( @d, "vspace" );
+	}
+	elsif ( /^\<(?:\*(\d\d))?(.*?)\>/p ) {
+	    push( @d, "text " . ( $1 || 0 ) . " " . $2 );
 	}
 	elsif ( /^(.)/p ) {
 	    push( @d, "ignore $1" );

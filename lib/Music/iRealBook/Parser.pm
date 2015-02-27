@@ -3,6 +3,7 @@
 use strict;
 use warnings;
 use Carp;
+use utf8;
 
 package Music::iRealBook::Parser;
 
@@ -43,29 +44,65 @@ sub decode {
     $res->{style} = $3;
     $res->{n} = $4;
     $res->{key} = $5;
-    $res->{tokens} = Music::iRealBook::Tokenizer->new->tokenize($6);
-    for ( $res->{measures} ) {
-	my $newbar = $_ = 0;
-	my $i = -1;
-	my $pbar = -1;
-	foreach my $t ( @{ $res->{tokens} } ) {
-	    $i++;
-	    if ( $newbar == 0 && $t =~ /^(measure)/ ) {
-		$_++;
-		$newbar++;
-		$t .= " " . $pbar;
-	    }
-	    if ( $newbar == 0 && $t =~ /^(chord|measure|rest)/ ) {
-		$_++;
-		$newbar++;
-		$pbar = $i;
-	    }
-	    if ( $t =~ /^(bar|end)/ ) {
-		$newbar = 0;
-	    }
-	    printf STDERR "> %3d %2d %d $t\n", $i, $_, $newbar;
-	}
+
+    for ( values %$res ) {
+	s/'/’/g;
     }
+
+    my $tokens = Music::iRealBook::Tokenizer->new->tokenize($6);
+    $res->{sections} = [];
+
+    my $section = { tokens => [] };
+
+    my $measures = 0;
+    my $allmeasures = 0;
+    my $newbar = 0;
+    my $i = -1;
+    my $i0 = 0;
+    my $pbar = -1;
+    foreach my $t ( @$tokens ) {
+	$i++;
+
+	if ( $t eq "end section" ) {
+	    push( @{ $section->{tokens} }, $t );
+	    $section->{measures} = $measures;
+	    $allmeasures += $measures;
+	    $measures = 0;
+	    push( @{ $res->{sections} }, { %$section } );
+	    printf STDERR "> %3d %3d %2d %d $t\n", $i, $i-$i0, $measures, $newbar;
+	    $section = { tokens => [] };
+	    $i0 = $i + 1;
+	    $pbar = -1;
+	    $newbar = 0;
+	    next;
+	}
+
+	if ( $newbar == 0 && $t =~ /^(measure)/ ) {
+	    $measures++;
+	    $newbar++;
+	    $t .= " " . $pbar;
+	}
+	if ( $newbar == 0 && $t =~ /^(chord|measure|rest)/ ) {
+	    $measures++;
+	    $newbar++;
+	    $pbar = $i - $i0;
+	}
+	if ( $t =~ /^(bar|end)/ ) {
+	    $newbar = 0;
+	}
+	if ( $t =~ /^mark\s+(.*)/ ) {
+	    $section->{title} = $1;
+	}
+	push( @{ $section->{tokens} }, $t );
+	printf STDERR "> %3d %3d %2d %d $t\n", $i, $i-$i0, $measures, $newbar;
+    }
+    if ( @{ $section->{tokens} } ) {
+	$section->{measures} = $measures;
+	$allmeasures += $measures;
+	push( @{ $res->{sections} }, { %$section } );
+    }
+
+    $res->{measures} = $allmeasures;
     $self->{song} = $res;
     warn( Dumper( $res ) ) if $debug;
 }
@@ -75,15 +112,19 @@ sub lilypond {
     my $song = $self->{song} || Carp::croak("No song?");
 
     open( my $fd, '>&STDOUT' );
-    my $time_d = 4;
-    my $time_n = 4;
-    my $time = $self->timesig( $time_d, $time_n );
-    foreach ( @{ $song->{song} } ) {
-	next unless /time_(\d)_(\d)/;
-	$time = $self->timesig( $1, $2 );
-	( $time_d, $time_n ) = $time =~ m;^(\d+)/(\d+)$;;
-	last;
+    binmode( $fd, ':utf8' );
+    my $time_d;
+    my $time_n;
+    my $time = "1/1";
+SLOOP:
+    foreach ( @{ $song->{sections} } ) {
+	foreach ( @{ $_->{tokens} } ) {
+	    next unless /time (\d\/\d)/;
+	    $time = $1;
+	    last SLOOP;
+	}
     }
+    ( $time_d, $time_n ) = $time =~ m;^(\d+)/(\d+)$;;
 
     $fd->print(<<EOD);
 %! lilypond
@@ -95,28 +136,21 @@ sub lilypond {
   subtitle = "@{[ $song->{style} ]}"
   composer = "@{[ $song->{composer} ]}"
   tagline = \\markup {
-    \\tiny "Converted from iRealBook by Johan vromans <jvromans\@squirrel.nl>"
+    \\tiny "Converted from iRealBook by App::Music::iRealPro $VERSION"
   }
 }
 
 % Paper size. A4, no headings, no indent.
-\\include "a4paper-nh.ily"
+\\paper {
+  #(set-paper-size "a4")
+  left-margin = 20\\mm
+  line-width = 170\\mm
+  ragged-last-bottom = ##t
+  indent = 0\\mm
+}
 
-% Define the voice names.
-\\include "voicenames.ily"
-
-% Staff size. Currently supported are 14 15 16 17 18 19 20.
-\\include "staff18.ly"
-
-% Use a sans font for the lyrics.
-\\include "lyricssans.ly"
-
-% Use popular notation for chords.
-\\include "popchords.ly"
-
-% Helper modules.
-\\include "ifdefined.ly"
-\\include "makeunfold.ly"
+myStaffSize = #18
+#(set-global-staff-size 18)
 
 global = {
   \\key @{[ $self->key2lp( $song->{key} ) ]}
@@ -127,12 +161,18 @@ global = {
 harmonics = \\chordmode {
 
 EOD
-    my $measures = $song->{measures};
-    $song = $song->{tokens};
+    my $measures = [];
+
+  foreach my $section ( @{ $song->{sections} } ) {
+
+    my $song = $section->{tokens};
     my $pdur = 0;
     my $inline = 0;
     my $inalt = 0;
     my $inrepeat = 0;
+
+    $fd->print("%% Section: ", $section->{title}, "\n");
+    my $mark = $section->{title};
 
     for ( my $i = 0; $i < @$song; $i++ ) {
 	my $s = $song->[$i];
@@ -154,12 +194,15 @@ EOD
 	    }
 	    my $chord = $self->chord2lp($1, $dur == $pdur ? 0 : $dur );
 	    $fd->print("  | ") unless $inline++;
+	    $fd->print("\\mark\\markup{\\box $mark} ") if $mark;
+	    $mark = "";
 	    $fd->print($chord, "  ");
 	    $pdur = $dur;
 	}
 	elsif ( $s =~ /^bar$/ ) {
 	    $fd->print("|\n");
 	    $inline = 0;
+	    push( @$measures, [ $time_d, $time_n ] );
 	}
 	elsif ( $s =~ /^end$/ ) {
 	    $fd->print("  }\n") if $inrepeat;
@@ -167,8 +210,10 @@ EOD
 	    $fd->print("  }\n  }\n") if $inalt;
 	    $fd->print("\\bar \"|.\"\n");
 	    $inline = 0;
+	    push( @$measures, [ $time_d, $time_n ] );
 	}
 	elsif ( $s =~ /^mark (.*)$/ ) {
+	    next;
 	    $fd->print("|\n") if $inline;
 	    $fd->print("  }\n"), $inrepeat = 0 if $inrepeat > 1;
             $fd->print("  }\n  }\n") if $inalt;
@@ -178,7 +223,14 @@ EOD
 	    $inrepeat++ if $inrepeat;
 	}
 	elsif ( $s =~ /^start repeat$/ ) {
-	    $fd->print( "  \\repeat volta 2 {\n" );
+
+	    my $volta = 2;
+            for ( my $j = $i+1; $j < @$song; $j++ ) {
+		my $t = $song->[$j];
+		last if $t eq "start repeat";
+		$volta = $1 if $t =~ /^alternative (\d+)/;
+	    }
+	    $fd->print( "  \\repeat volta $volta {\n" );
 	    $inrepeat = 1;
 	}
 	elsif ( $s =~ /^alternative (\d)$/ ) {
@@ -199,28 +251,82 @@ EOD
 	}
 	elsif ( $s =~ /^end section/ ) {
 	    $fd->print("  \\bar \"||\"\n" );
+	    push( @$measures, [ $time_d, $time_n ] );
+	}
+	elsif ( $s =~ /^time\s+(\S+)/ ) {
+	    if ( $1 ne $time ) {
+		$time = $1;
+		( $time_d, $time_n ) = $time =~ m;^(\d+)/(\d+)$;;
+		$fd->print("  \\time $time\n" );
+	    }
 	}
     }
-
+    $fd->print("\n") if $inline;
+    $fd->print("  }\n  }\n") if $inalt;
+  }
     $fd->print(<<EOD) if 1;
 
 }
 
 % Create metronome ticks.
 ticktock = \\drummode {
-  \\makeUnfold \\unfoldRepeats \\removeWithTag #'scoreOnly \\harmonics {
-    hiwoodblock $time_d @{[ ( "lowoodblock" ) x ( $time_n - 1 ) ]}
-  }
+EOD
+
+    ( $time_d, $time_n ) = ( 0, 0 );
+    foreach ( @$measures ) {
+	if ( $_->[0] != $time_d || $_->[1] != $time_n ) {
+	    ( $time_d, $time_n ) = @$_;
+	    $fd->print( "  \\time $time_d/$time_n\n" );
+	}
+	$fd->print( "  hiwoodblock $time_n",
+		    ( " lowoodblock" ) x ( $time_d - 1 ),
+		    " |\n" );
+    }
+
+    $fd->print(<<EOD) if 1;
 }
 
-highMusic = { s1 * @{[ $measures ]} }
+% Create silent track.
+highMusic = {
+EOD
+
+    ( $time_d, $time_n ) = ( 0, 0 );
+    foreach ( @$measures ) {
+	if ( $_->[0] != $time_d || $_->[1] != $time_n ) {
+	    ( $time_d, $time_n ) = @$_;
+	    $fd->print( "  \\time $time_d/$time_n\n" );
+	}
+	$fd->print( "  s1 * $time_d/$time_n |\n" );
+    }
+
+    $fd->print(<<EOD) if 1;
+}
 
 allMusic = {
   \\new ChoirStaff
   <<
-    \\include  "chordstaff.ily"
-    #(define-public thisStaff "high")   \\include "genericstaff.ily"
-    \\tag #'midiOnly \\include "ticktock.ily"
+    \\new ChordNames {
+      \\set midiInstrument = "percussive organ"
+      \\set midiMaximumVolume = #0.3
+      \\set chordChanges = ##f
+      \\set additionalPitchPrefix = "add"
+      \\global
+      \\harmonics
+    }
+    \\new Staff = High {
+       \\new Voice {
+	 \\set Staff.midiInstrument = "acoustic grand"
+	 \\global
+	 \\highMusic
+       }
+    }
+    \\tag #'midiOnly \\new DrumStaff = TickTock {
+      \\new DrumVoice {
+	\\set DrumStaff.midiMaximumVolume = #0.3
+	\\global
+	\\ticktock
+      }
+    }
   >>
 }
 
@@ -229,12 +335,6 @@ allMusic = {
   \\removeWithTag #'midiOnly \\allMusic
   \\layout {
     \\context {
-      % To remove empty staffs:
-      % \\RemoveEmptyStaffContext 
-      % To use the setting globally, uncomment the following line:
-      % \\override VerticalAxisGroup #'remove-first = ##t
-    }
-    \\context {
       \\Score
       \\omit BarNumber
       \\remove "Metronome_mark_engraver"
@@ -242,7 +342,6 @@ allMusic = {
     \\context {
       \\Staff
       \\override TimeSignature #'style = #'()
-      %\\remove "Time_signature_engraver"
     }
   }
 }
@@ -250,8 +349,7 @@ allMusic = {
 %% Generate the MIDI.
 \\score {
   \\removeWithTag #'scoreOnly \\unfoldRepeats \\allMusic
-  \\midi {
-  }
+  \\midi { }
 }
 
 EOD
@@ -261,7 +359,7 @@ EOD
 sub key2lp {
     my ( $self, $key ) = @_;
 
-    unless ( $key =~ /^([ABCDEFG])([b#])?([-m])?$/ ) {
+    unless ( $key =~ /^([ABCDEFGW])([b#])?([-m^o])?$/ ) {
 	Carp::croak("Invalid key: $key");
     }
 
@@ -280,7 +378,7 @@ sub key2lp {
 sub chord2lp {
     my ( $self, $chord, $dur ) = @_;
 
-    unless ( $chord =~ /^([ABCDEFG])([b\#])?([-m])?(.*)$/ ) {
+    unless ( $chord =~ /^([ABCDEFGW])([b\#]?)([-m^o]?)(.*)$/ ) {
 	Carp::croak("Invalid chord key: $chord");
     }
 
@@ -293,7 +391,10 @@ sub chord2lp {
     $root .= $dur if $dur;
     $root .= ":";
 
-    $root .= $min ? "m" : "";
+    $root .= $min eq "-" ? "m"
+	     : $min eq "^" ? "maj"
+	       : $min eq "o" ? "dim"
+		 : "";
 
     while ( $mod =~ s/([2345679])//g ) {
 	$root .= $1 . ".";
@@ -327,11 +428,28 @@ package main;
 
 unless ( caller ) {
     my $d = Music::iRealBook::Parser->new( debug => 1 );
+
+=for later
+
     my $res = $d->decode( <<'EOD' );
-Ain't She Sweet=Ager Milton=Medium Up Swing=n=Eb={*AT44Eb6 A9 |Bb7   |Eb6 A9 |Bb7   |Eb6 G7 |C7   |F7 Bb7 |N1Eb6 Bb7, }            |N2Eb7   ][*BAb7   | x  |Eb6   |Eb7   |Ab7   | x  |Eb6   |F-7 Bb7 ][*AEb6 A9 |Bb7   |Eb6 A9 |Bb7   |Eb G7 |C7   |F7 Bb7 |sEb,Ab7,lEb Z 
+Ain't She Sweet XXX=Ager Milton=Medium Up Swing=n=Eb={*AT44Eb6 A9 |Bb7   |Eb6 A9 |Bb7   |Eb6 G7 |C7   |F7 Bb7 |N1Eb6 Bb7, }            |N2Eb7   ][*BAb7   | x  |Eb6   |Eb7   |Ab7   | x  |Eb6   |F-7 Bb7 ][*AEb6 A9 |Bb7   |Eb6 A9 |Bb7   |Eb G7 |C7   |F7 Bb7 |sEb,Ab7,lEb Z 
+EOD
+
+    my $res = $d->decode( <<'EOD' );
+All Of Me=Marks Gerald=Medium Swing=n=C=*A[T44C^7   | x  |E7   | x  |A7   | x  |D-7   | x  ]*B[E7   | x  |A-7   | x  |D7   | x  |D-7   |G7   ]*A[C^7   | x  |E7   | x  |A7   | x  |D-7   | x  ]*C[F^7   |F-6(F#o7)   |E-7(C^7/G)   |A7   |D-7   |G7   |C6 Ebo7 |D-7 G7 Z
+EOD
+
+    my $res = $d->decode( <<'EOD' );
+Bossa 3=Exercise=Bossa Nova=n=D-=[*AT44D- |D-7/C |E7b9/B |x |Eh7/Bb |A7b9 |D- |sEh,A7,|lD- |sBh,E7,|lA- |x |Bb^7 |x |Eh7 |A7b9 ][*BD- |D-7/C |E7b9/B |x |Eh7/Bb |A7b9 |D- |D7b9 |G- |A7b9 |D- |D-7/C |E7b9/B |A7b9 |D- |sE-7,A7,]Y[*ClD^7 |B7/D# |E-7 |x |A7sus |A7 |Do7 |D^7 |F#-7 |Fo7 |E-7 |x |E7 |x |Eh7 |A7 ][*DD^7 |B-7 |E7 |x |F#7 |x |sB-7,Bb-7,|A-7,D7,|lG^7 |G-7 |F#-7 |B7 |E7 |A7 |F#-7 |B7 |E7 |A7 |D6 |A7 Z 
+EOD
+    $d->lilypond;
+
+=cut
+
+    my $res = $d->decode( <<'EOD' );
+A015: Venice - The Family Tree=Lennons=Rock Ballad=n=D=[T44*iD, F#-, |G, F#-, |G, F#-, |A, D, ][T44*AD, F#-, |G, D, |G, D, |E, A, |D, F#-, |G, D, |G, D, |A, D, ][T24*CD, |T44B-, A, |G, D, |G, D, |E, A, |B-, A, |G, D, |E-, A, |T24B-, |T44B-/A,   |E-, A, ][T44*DD, F#-, |G, F#-, |G, F#-, |A, D, |D,   Z
 EOD
 
     $d->lilypond;
-
 }
 1;
