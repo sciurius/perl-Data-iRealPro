@@ -1,5 +1,6 @@
 #! perl
 
+use v5.10;
 use strict;
 use warnings;
 use Carp;
@@ -67,7 +68,6 @@ sub tokenize {
 
     while ( length($_) ) {
 	if ( /^\{/p ) {		# |:
-	    $d->( "start section" ) unless @d;
 	    $d->( "start repeat" );
 	}
 	elsif ( /^\}/p ) {	# :|
