@@ -18,7 +18,7 @@ sub new {
     bless { variant => "irealpro", %args }, $pkg;
 }
 
-sub decode {
+sub decode_playlist {		# or single song
     my ( $self, $url ) = @_;
     $url =~ s/\n$//;
 
@@ -27,90 +27,100 @@ sub decode {
 	$url = $2;
     }
 
-    if ( $url =~ /%[0-9a-f]{2}/i ) { # assume uri-encoded
-	$url =~ s/%([0-9a-f]{2})/sprintf("%c",hex($1))/gie;
-    }
+    # Assume uri-encoded.
+    $url =~ s/%([0-9a-f]{2})/sprintf("%c",hex($1))/gie;
 
     warn( "STRING: >>", $url, "<<\n" ) if $self->{debug};
 
+    # Split the playlist into songs.
     my @a = split( '===', $url );
+
     my $playlist;
-    if ( @a > 1 ) {
+    if ( @a > 1 ) {		# song===song===song===ThePlaylist
 	$playlist = pop(@a);
 	warn( "PLAYLIST: $playlist, ", scalar(@a), " songs\n" );
     }
+
+    # Process the song(s).
     foreach ( @a ) {
-
-	my @a = split( '=', $_ );
-	unless ( @a == ( $self->{variant} eq "irealpro" ? 10 : 6 ) ) {
-	    Carp::croak( "Incorrect ", $self->{variant}, " format 1 " . scalar(@a) );
-	}
-
-	my $res;
-	my $tokstring;
-
-	if ( $self->{variant} eq "irealpro" ) {
-	    $res->{title} = shift(@a);
-	    $res->{composer} = shift(@a);
-	    shift(@a); # ??
-	    $res->{style} = shift(@a);
-	    $res->{key} = shift(@a);
-	    shift(@a); # ??
-	    $tokstring = shift(@a);
-	    $res->{actual_style} = shift(@a);
-	    $res->{actual_tempo} = shift(@a);
-	    $res->{actual_repeats} = shift(@a);
-	}
-	elsif ( $self->{variant} eq "irealbook" ) {
-	    $res->{title} = shift(@a);
-	    $res->{composer} = shift(@a);
-	    $res->{style} = shift(@a);
-	    shift(@a); # ??
-	    $res->{key} = shift(@a);
-	    $tokstring = shift(@a);
-	}
-
-	# Polish some values.
-	for ( values %$res ) {
-	    s/'/’/g;
-	}
-
-	my $r = $self->decode_1($tokstring);
-
-	if ( $self->{debug} ) {
-	    $res->{tokens} = $r;
-	    warn( Dumper( $res ) );
-	    next;
-	}
-	$res->{sections} = $r->{sections};
-	$res->{measures} = $r->{measures};
-	$self->{song} = $res;
+	my $res = $self->decode_song($_);
+#	$self->interpret($res);
     }
 }
 
-sub decode_1 {
-    my ( $self, $tokstring ) = @_;
+sub decode_song {
+    my ( $self, $str ) = @_;
 
-    unless ( !!($self->{variant} eq "irealpro")
-	     ==
-	     !!($tokstring =~ s/^1r34LbKcu7//) ) {
-	Carp::croak( "Incorrect format 2 " . substr($tokstring,0,20) );
+    my @a = split( '=', $str );
+    unless ( @a == ( $self->{variant} eq "irealpro" ? 10 : 6 ) ) {
+	Carp::croak( "Incorrect ", $self->{variant}, " format 1 " . scalar(@a) );
     }
 
+    my $res;
+    my $tokstring;
+
     if ( $self->{variant} eq "irealpro" ) {
-	$tokstring = Music::iRealPro::Opus::irealb_obfuscate($tokstring);
+	$res->{title} = shift(@a);
+	$res->{composer} = shift(@a);
+	shift(@a); # ??
+	$res->{style} = shift(@a);
+	$res->{key} = shift(@a);
+	shift(@a); # ??
+	$res->{raw} = shift(@a);
+	$res->{actual_style} = shift(@a);
+	$res->{actual_tempo} = shift(@a);
+	$res->{actual_repeats} = shift(@a);
+    }
+    elsif ( $self->{variant} eq "irealbook" ) {
+	$res->{title} = shift(@a);
+	$res->{composer} = shift(@a);
+	$res->{style} = shift(@a);
+	shift(@a); # ??
+	$res->{key} = shift(@a);
+	$res->{raw} = shift(@a);
+    }
+    $tokstring = $res->{raw};
+
+    # Polish some values.
+    for ( qw(title composer) ) {
+	$res->{$_} =~ s/'/’/g;
+    }
+
+    # iRealPro format must start with "1r34LbKcu7" magic.
+    unless ( !!($self->{variant} eq "irealpro")
+	     ==
+	     !!($tokstring =~ /^1r34LbKcu7/) ) {
+	Carp::croak( "Incorrect ", $self->{variant},
+		     " format 2 " . substr($tokstring,0,20) );
+    }
+
+    # If iRealPro, deobfuscate. This will also get rid of the magic.
+    if ( $self->{variant} eq "irealpro" ) {
+	$tokstring = deobfuscate($tokstring);
 	warn( "TOKSTR: >>", $tokstring, "<<\n" ) if $self->{debug};
     }
 
+    # FROM HERE we have a pure data string, independent of the
+    # original data format.
+    # Nevertheless we pass the variant to the tokenizer, just in case
+    # we learn some day that a subtile difference in treatment is
+    # necessary.
+
+    # Build the tokens array. This reflects as precisely as possible
+    # the contents of the pure data string.
     my $tokens = Music::iRealPro::Tokenizer->new
-      ( debug => $self->{debug},
+      ( debug   => $self->{debug},
 	variant => $self->{variant},
       )->tokenize($tokstring);
 
-    if ( $self->{debug} ) {
-	return { tokens => [ @$tokens ] };
-    }
-    my $res = { raw => [ @$tokens ], sections => [] };
+    return $tokens;
+}
+
+sub interpret {
+    my ( $self, $tokens ) = @_;
+
+    my $res = { raw => [ @$tokens ],
+		sections => [] };
     my $section = { tokens => [] };
 
     my $measures = 0;
@@ -141,7 +151,7 @@ sub decode_1 {
 	    $newbar++;
 	    $t .= " " . $pbar;
 	}
-	if ( $newbar == 0 && $t =~ /^(chord|measure|rest)/ ) {
+	if ( $newbar == 0 && $t =~ /^(chord|measure)/ ) {
 	    $measures++;
 	    $newbar++;
 	    $pbar = $i - $i0;
@@ -482,11 +492,40 @@ sub timesig {
     $sigs->{ "$time_d$time_n" } || Carp::croak("Invalid time signature: $time_d/$time_n");
 }
 
+sub obfuscate {
+    my ( $t ) = @_;
+    for ( $t ) {
+	s/   /XyQ/g;
+	s/ \|/LZ/g;
+	s/\| x/Kcl/g;
+    }
+    $t = Music::iRealPro::Opus::irealb_obfuscate($t);
+    for ( $t ) {
+	s/^/1r34LbKcu7/;
+    }
+    $t;
+}
+
+sub deobfuscate {
+    my ( $t ) = @_;
+    for ( $t ) {
+	s/^1r34LbKcu7//;
+    }
+    $t = Music::iRealPro::Opus::irealb_obfuscate($t);
+    for ( $t ) {
+	s/XyQ/   /g;
+	s/LZ/ |/g;
+	s/Kcl/| x/g;
+    }
+    $t;
+}
+
 package main;
 
 unless ( caller ) {
     my $d = Music::iRealPro::Parser->new( debug => 1 );
     my $data = do { local $/; <> };
+    # Extract URL.
     $data =~ s;^.*(irealb(?:ook)?://.*?)(?:$|\").*;$1;s;
-    $d->decode($data);
+    $d->decode_playlist($data);
 }

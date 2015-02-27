@@ -7,7 +7,7 @@ use Carp;
 
 package Music::iRealPro::Tokenizer;
 
-our $VERSION = "0.01";
+our $VERSION = "0.10";
 
 use Data::Dumper;
 
@@ -16,25 +16,15 @@ my $p_qual  = qr{ (?: -|\*[^*]*\*|o|h|dim|sus(?:[24])?|\^?7)? }x;
 my $p_extra = qr{ (?: (?:add|sub)? [b#]? [0-9])* }x;
 my $p_chord = qr{ $p_root $p_qual $p_extra (?: / $p_root )? }x;
 
-my $debug;
-my $raw;			# wants parse details
-my $variant = "irealpro";	# "irealpro" or "irealbook"
-
 sub new {
     my ( $pkg, %args ) = @_;
-    $debug   = delete $args{debug};
-    $raw     = delete $args{raw};
-    $variant = delete $args{variant} || "irealpro";
-    bless { %args }, $pkg;
+    bless { variant => "irealpro", %args }, $pkg;
 }
 
 sub tokenize {
     my ( $self, $string ) = @_;
 
     $_ = $string;
-
-    # Mark markup spaces.
-    s/(\}) +([\[\]\{\|])/$1\240$2/g;
 
     # Make tokens.
     my @d;
@@ -44,19 +34,10 @@ sub tokenize {
     my $d = sub {
 	push( @d, [ $_[0], $_[1] // ${^MATCH}, $index ] );
 	printf STDERR ("%3d  %-8s %s\n", $index, $_[1] // ${^MATCH}, $_[0] )
-	  if $debug;
+	  if $self->{debug};
     };
 
-    if ( $variant eq "irealpro" ) {
-
-	# Pre-substitutions. I don't know why iRealPro thought this was a
-	# good idea... Obfuscation, maybe?
-	# Anyway, they affect the contents of user texts as well :).
-
-	s/XyQ/   /g;
-	s/LZ/ |/g;
-	s/Kcl/| x/g;
-	warn( "TOKSTR: >>$_<<\n" ) if $debug;
+    if ( $self->{variant} eq "irealpro" ) {
     }
     else {
 	# I'm not sure irealbook allows the chord *mods* .
@@ -65,6 +46,9 @@ sub tokenize {
 
     # IMPORTANT: iReal design is visually oriented. All info is added
     # to the current cell until the pointer advances to the next cell.
+
+    # Mark markup spaces.
+    s/(\})( +)([\[\]\{\|])/$1 . ( "\240" x length($2) ) . $3/ge;
 
     while ( length($_) ) {
 	if ( /^\{/p ) {		# |:
@@ -88,12 +72,15 @@ sub tokenize {
 	elsif ( /^([sl])/p ) {	# small/large indicator for chords
 	    $d->( $1 eq "s" ? "small" : "large" );
 	}
-	elsif ( /^$p_chord/p ) {
+	elsif ( /^$p_chord(?:\($p_chord\))?/p ) {
 	    $d->( "chord " . ${^MATCH} );
 	}
 	elsif ( /^$p_root/p ) {
 	    warn( "Unparsable chord: " . ${^MATCH} . "\n" );
 	    $d->( "chord? " . ${^MATCH} );
+	}
+	elsif ( /^\($p_chord\)/p ) {
+	    $d->( "chord " . ${^MATCH} );
 	}
 	elsif ( /^n/p ) {	# silent chord
 	    $d->( "chord NC" );
@@ -151,7 +138,7 @@ sub tokenize {
 	$index = $l0 - length($_);
     }
 
-    return $raw ? [ @d ] : [ map { $_->[0] } @d ];
+    return $self->{raw} ? [ @d ] : [ map { $_->[0] } @d ];
 }
 
 my $_sigs;
