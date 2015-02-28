@@ -10,7 +10,6 @@ package Music::iRealPro::Parser;
 our $VERSION = "0.01";
 
 use Music::iRealPro::Tokenizer;
-use Music::iRealPro::Opus;	# for obfuscator
 use Data::Dumper;
 
 sub new {
@@ -44,7 +43,7 @@ sub decode_playlist {		# or single song
     # Process the song(s).
     foreach ( @a ) {
 	my $res = $self->decode_song($_);
-#	$self->interpret($res);
+	$self->interpret($res);
     }
 }
 
@@ -119,59 +118,112 @@ sub decode_song {
 sub interpret {
     my ( $self, $tokens ) = @_;
 
-    my $res = { raw => [ @$tokens ],
-		sections => [] };
-    my $section = { tokens => [] };
+    my $res = { tokens => [ @$tokens ],
+		content => [] };
 
-    my $measures = 0;
-    my $allmeasures = 0;
-    my $newbar = 0;
-    my $i = -1;
-    my $i0 = 0;
-    my $pbar = -1;
+    my $cell;			# current cell
+    my $new_cell = sub {
+	$cell = [];
+    };
+
+    my $measure;		# current measure
+    my $new_measure = sub {
+	$measure = { type    => "measure",
+		     content => [],
+		   };
+	$new_cell->();
+    };
+
+    my $section;		# current section
+    my $new_section = sub {
+	$section = { type    => "section",
+		     content => [],
+		     tokens  => [ @_ > 0 ? @_ : () ],
+		   };
+	$new_measure->();
+    };
+
+    $new_section->();
+
+    my $i = 0;
+    my $barskip = 0;
     foreach my $t ( @$tokens ) {
 	$i++;
 
-	if ( $t eq "end section" ) {
-	    push( @{ $section->{tokens} }, $t );
-	    $section->{measures} = $measures;
-	    $allmeasures += $measures;
-	    $measures = 0;
-	    push( @{ $res->{sections} }, { %$section } );
-	    printf STDERR "> %3d %3d %2d %d $t\n", $i, $i-$i0, $measures, $newbar;
-	    $section = { tokens => [] };
-	    $i0 = $i + 1;
-	    $pbar = -1;
-	    $newbar = 0;
+	my $done = 0;
+
+	if ( $t eq "start section" ) {
+	    $new_section->($t);
 	    next;
 	}
 
-	if ( $newbar == 0 && $t =~ /^(measure)/ ) {
-	    $measures++;
-	    $newbar++;
-	    $t .= " " . $pbar;
+	if ( $t =~ /^hspace\s+(\d+)$/ ) {
+	    push( @{ $res->{content} },
+		  { type => "hspace",
+		    tokens => [ $t ],
+		    value => 0+$1 } );
+	    next;
 	}
-	if ( $newbar == 0 && $t =~ /^(chord|measure)/ ) {
-	    $measures++;
-	    $newbar++;
-	    $pbar = $i - $i0;
-	}
-	if ( $t =~ /^(bar|end)/ ) {
-	    $newbar = 0;
-	}
-	if ( $t =~ /^mark\s+(.*)/ ) {
-	    $section->{title} = $1;
-	}
+
 	push( @{ $section->{tokens} }, $t );
-	printf STDERR "> %3d %3d %2d %d $t\n", $i, $i-$i0, $measures, $newbar;
-    }
-    if ( @{ $section->{tokens} } ) {
-	$section->{measures} = $measures;
-	$allmeasures += $measures;
-	push( @{ $res->{sections} }, { %$section } );
+
+	if ( $barskip ) {
+	    if ( $t =~ /^bar|end$/ ) {
+		$barskip = 0;
+	    }
+	    else {
+		next;
+	    }
+	}
+
+	if ( $t eq "end" || $t eq "end section" ) {
+	    push( @{ $res->{content} }, { %{ $section } } );
+	    next;
+	}
+
+	if ( $t eq "bar" || $t eq "end repeat" ) {
+	    push( @{ $section->{content} }, { %{ $measure } } )
+	      if @{ $measure->{content} };
+	    $new_measure->();
+	    next;
+	}
+
+	if ( $t =~ /^(chord\s+(.*)|advance\s+\d+)$/ ) {
+	    push( @$cell, $t );
+	    push( @{ $measure->{content} }, [ @$cell ] );
+	    $new_cell->();
+	    next;
+	}
+
+	if ( $t =~ /^measure repeat (single|double)$/ ) {
+	    my $need = $1 eq "single" ? 1 : 2;
+	    my @m;
+	    for ( my $i = @{ $section->{content} }-1; $i >= 0; $i-- ) {
+		if ( $section->{content}->[$i]->{type} =~ /^measure\b/ ) {
+		    $section->{content}->[$i]->{repeat} = "percent";
+		    unshift( @m, { %{ $section->{content}->[$i] } } );
+		    last if @m == $need;
+		}
+	    }
+
+	    for ( my $i = 0; $i < @m; $i++ ) {
+		$m[$i]->{type} = "measure repeat ".(1+$i)."-".scalar(@m);
+		delete $m[$i]->{repeat};
+		push( @{ $section->{content} }, { %{ $m[$i] } } );
+	    }
+
+	    $new_measure->();
+	    $barskip = 1;
+	    next;
+	}
+
+	push( @$cell, $t );
+	next;
+
     }
 
-    $res->{measures} = $allmeasures;
+    $Data::Dumper::Deepcopy = 1;
+    warn Dumper($res) if $self->{debug};
     return $res;
 }
 
@@ -492,32 +544,61 @@ sub timesig {
     $sigs->{ "$time_d$time_n" } || Carp::croak("Invalid time signature: $time_d/$time_n");
 }
 
+# Obfuscate...
+# IN:  [T44C   |G   |C   |G   Z
+# OUT: 1r34LbKcu7[T44CXyQ|GXyQ|CXyQ|GXyQZ
 sub obfuscate {
     my ( $t ) = @_;
     for ( $t ) {
-	s/   /XyQ/g;
-	s/ \|/LZ/g;
-	s/\| x/Kcl/g;
-    }
-    $t = Music::iRealPro::Opus::irealb_obfuscate($t);
-    for ( $t ) {
-	s/^/1r34LbKcu7/;
+	s/   /XyQ/g;		# obfuscating substitution
+	s/ \|/LZ/g;		# obfuscating substitution
+	s/\| x/Kcl/g;		# obfuscating substitution
+	$_ = hussle($_);	# hussle
+	s/^/1r34LbKcu7/;	# add magix prefix
     }
     $t;
 }
 
+# Deobfuscate...
+# IN:  1r34LbKcu7[T44CXyQ|GXyQ|CXyQ|GXyQZ
+# OUT: [T44C   |G   |C   |G   Z
 sub deobfuscate {
     my ( $t ) = @_;
     for ( $t ) {
-	s/^1r34LbKcu7//;
-    }
-    $t = Music::iRealPro::Opus::irealb_obfuscate($t);
-    for ( $t ) {
-	s/XyQ/   /g;
-	s/LZ/ |/g;
-	s/Kcl/| x/g;
+	s/^1r34LbKcu7//;	# remove magix prefix
+	$_ = hussle($_);	# hussle
+	s/XyQ/   /g;		# obfuscating substitution
+	s/LZ/ |/g;		# obfuscating substitution
+	s/Kcl/| x/g;		# obfuscating substitution
     }
     $t;
+}
+
+# Symmetric husseling.
+sub hussle {
+    my ( $string ) = @_;
+    my $result = '';
+
+    while ( length($string) > 50 ) {
+
+	# Treat 50-byte segments.
+	my $segment = substr( $string, 0, 50, '' );
+	if ( length($string) < 2 ) {
+	    $result .= $segment;
+	    next;
+	}
+
+	# Obfuscate a 50-byte segment.
+	$result .= reverse( substr( $segment, 45,  5 ) ) .
+		   substr( $segment,  5, 5 ) .
+		   reverse( substr( $segment, 26, 14 ) ) .
+		   substr( $segment, 24, 2 ) .
+		   reverse( substr( $segment, 10, 14 ) ) .
+		   substr( $segment, 40, 5 ) .
+		   reverse( substr( $segment,  0,  5 ) );
+    }
+
+    return $result . $string;
 }
 
 package main;
