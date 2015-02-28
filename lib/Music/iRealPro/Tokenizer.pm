@@ -48,7 +48,7 @@ sub tokenize {
     # to the current cell until the pointer advances to the next cell.
 
     # Mark markup spaces.
-    s/(\})( +)([\[\]\{\|])/$1 . ( "\240" x length($2) ) . $3/ge;
+    s/([\}\]])( +)([\[\]\{\|])/$1 . ( "\240" x length($2) ) . $3/ge;
 
     while ( length($_) ) {
 	if ( /^\{/p ) {		# |:
@@ -86,13 +86,13 @@ sub tokenize {
 	    $d->( "chord NC" );
 	}
 	elsif ( /^x/p ) {	# repeat the previous measure
-	    $d->( "measure repeat" );
+	    $d->( "measure repeat single" );
 	}
-	elsif ( /^r/p ) {	# repeat the previous measure twice
-	    $d->( "measure repeat twice" );
+	elsif ( /^r/p ) {	# repeat the previous two measures
+	    $d->( "measure repeat double" );
 	}
-	elsif ( /^ /p ) {	# advance to next cell
-	    $d->( "advance" );
+	elsif ( /^ +/p ) {	# advance to next cell
+	    $d->( "advance " . length(${^MATCH}), " " );
 	}
 	elsif ( /^\|/p ) {	# bar
 	    $d->( "bar" );
@@ -124,8 +124,8 @@ sub tokenize {
 	elsif ( /^Y/p ) {	# add vertical space
 	    $d->( "vspace" );
 	}
-	elsif ( /^\240/p ) {	# markup space
-	    $d->( "hspace", " " );
+	elsif ( /^\240+/p ) {	# markup space
+	    $d->( "hspace " . length(${^MATCH}), " " );
 	}
 	elsif ( /^\<(?:\*(\d\d))?(.*?)\>/p ) { # text
 	    $d->( "text " . ( $1 || 0 ) . " " . $2 );
