@@ -9,6 +9,7 @@ package Music::iRealPro::Parser;
 
 our $VERSION = "0.01";
 
+use Music::iRealPro::URI;
 use Music::iRealPro::Tokenizer;
 use Data::Dumper;
 
@@ -19,30 +20,17 @@ sub new {
 
 sub decode_playlist {		# or single song
     my ( $self, $url ) = @_;
-    $url =~ s/\n$//;
 
-    if ( $url =~ m;^irealb(ook)?://(.*); ) {
-	$self->{variant} = "irealbook" if defined $1;
-	$url = $2;
-    }
-
-    # Assume uri-encoded.
-    $url =~ s/%([0-9a-f]{2})/sprintf("%c",hex($1))/gie;
-
-    warn( "STRING: >>", $url, "<<\n" ) if $self->{debug};
-
-    # Split the playlist into songs.
-    my @a = split( '===', $url );
-
-    my $playlist;
-    if ( @a > 1 ) {		# song===song===song===ThePlaylist
-	$playlist = pop(@a);
-	warn( "PLAYLIST: $playlist, ", scalar(@a), " songs\n" );
+    my $u = Music::iRealPro::URI->new( data => $url,
+				       debug => $self->{debug} );
+    if ( $u->{playlist}->{name} ) {
+	warn( "PLAYLIST: ", $u->{playlist}->{name},
+	      ", ", scalar(@{ $u->{playlist}->{songs} }), " songs\n" );
     }
 
     # Process the song(s).
-    foreach ( @a ) {
-	my $res = $self->decode_song($_);
+    foreach my $song ( @{ $u->{playlist}->{songs} } ) {
+	my $res = $self->decode_song($song->{data});
 	$self->interpret($res);
     }
 }
@@ -50,67 +38,12 @@ sub decode_playlist {		# or single song
 sub decode_song {
     my ( $self, $str ) = @_;
 
-    my @a = split( '=', $str );
-    unless ( @a == ( $self->{variant} eq "irealpro" ? 10 : 6 ) ) {
-	Carp::croak( "Incorrect ", $self->{variant}, " format 1 " . scalar(@a) );
-    }
-
-    my $res;
-    my $tokstring;
-
-    if ( $self->{variant} eq "irealpro" ) {
-	$res->{title} = shift(@a);
-	$res->{composer} = shift(@a);
-	shift(@a); # ??
-	$res->{style} = shift(@a);
-	$res->{key} = shift(@a);
-	shift(@a); # ??
-	$res->{raw} = shift(@a);
-	$res->{actual_style} = shift(@a);
-	$res->{actual_tempo} = shift(@a);
-	$res->{actual_repeats} = shift(@a);
-    }
-    elsif ( $self->{variant} eq "irealbook" ) {
-	$res->{title} = shift(@a);
-	$res->{composer} = shift(@a);
-	$res->{style} = shift(@a);
-	shift(@a); # ??
-	$res->{key} = shift(@a);
-	$res->{raw} = shift(@a);
-    }
-    $tokstring = $res->{raw};
-
-    # Polish some values.
-    for ( qw(title composer) ) {
-	$res->{$_} =~ s/'/’/g;
-    }
-
-    # iRealPro format must start with "1r34LbKcu7" magic.
-    unless ( !!($self->{variant} eq "irealpro")
-	     ==
-	     !!($tokstring =~ /^1r34LbKcu7/) ) {
-	Carp::croak( "Incorrect ", $self->{variant},
-		     " format 2 " . substr($tokstring,0,20) );
-    }
-
-    # If iRealPro, deobfuscate. This will also get rid of the magic.
-    if ( $self->{variant} eq "irealpro" ) {
-	$tokstring = deobfuscate($tokstring);
-	warn( "TOKSTR: >>", $tokstring, "<<\n" ) if $self->{debug};
-    }
-
-    # FROM HERE we have a pure data string, independent of the
-    # original data format.
-    # Nevertheless we pass the variant to the tokenizer, just in case
-    # we learn some day that a subtile difference in treatment is
-    # necessary.
-
     # Build the tokens array. This reflects as precisely as possible
     # the contents of the pure data string.
     my $tokens = Music::iRealPro::Tokenizer->new
       ( debug   => $self->{debug},
 	variant => $self->{variant},
-      )->tokenize($tokstring);
+      )->tokenize($str);
 
     return $tokens;
 }
@@ -542,63 +475,6 @@ sub timesig {
 	       };
 
     $sigs->{ "$time_d$time_n" } || Carp::croak("Invalid time signature: $time_d/$time_n");
-}
-
-# Obfuscate...
-# IN:  [T44C   |G   |C   |G   Z
-# OUT: 1r34LbKcu7[T44CXyQ|GXyQ|CXyQ|GXyQZ
-sub obfuscate {
-    my ( $t ) = @_;
-    for ( $t ) {
-	s/   /XyQ/g;		# obfuscating substitution
-	s/ \|/LZ/g;		# obfuscating substitution
-	s/\| x/Kcl/g;		# obfuscating substitution
-	$_ = hussle($_);	# hussle
-	s/^/1r34LbKcu7/;	# add magix prefix
-    }
-    $t;
-}
-
-# Deobfuscate...
-# IN:  1r34LbKcu7[T44CXyQ|GXyQ|CXyQ|GXyQZ
-# OUT: [T44C   |G   |C   |G   Z
-sub deobfuscate {
-    my ( $t ) = @_;
-    for ( $t ) {
-	s/^1r34LbKcu7//;	# remove magix prefix
-	$_ = hussle($_);	# hussle
-	s/XyQ/   /g;		# obfuscating substitution
-	s/LZ/ |/g;		# obfuscating substitution
-	s/Kcl/| x/g;		# obfuscating substitution
-    }
-    $t;
-}
-
-# Symmetric husseling.
-sub hussle {
-    my ( $string ) = @_;
-    my $result = '';
-
-    while ( length($string) > 50 ) {
-
-	# Treat 50-byte segments.
-	my $segment = substr( $string, 0, 50, '' );
-	if ( length($string) < 2 ) {
-	    $result .= $segment;
-	    next;
-	}
-
-	# Obfuscate a 50-byte segment.
-	$result .= reverse( substr( $segment, 45,  5 ) ) .
-		   substr( $segment,  5, 5 ) .
-		   reverse( substr( $segment, 26, 14 ) ) .
-		   substr( $segment, 24, 2 ) .
-		   reverse( substr( $segment, 10, 14 ) ) .
-		   substr( $segment, 40, 5 ) .
-		   reverse( substr( $segment,  0,  5 ) );
-    }
-
-    return $result . $string;
 }
 
 package main;
