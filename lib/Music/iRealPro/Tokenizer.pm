@@ -106,7 +106,7 @@ sub tokenize {
 	    $d->( "end" );
 	    last;
 	}
-	elsif ( /^U/p ) {	# end repetition ### pro only???
+	elsif ( /^U/p ) {	# end repetition
 	    $d->( "stop" );
 	}
 	elsif ( /^p/p ) {
