@@ -3,7 +3,6 @@
 use strict;
 use warnings;
 use Carp;
-use utf8;
 
 package Music::iRealPro::SongData;
 
@@ -51,11 +50,6 @@ sub parse {
     }
     $tokstring = $self->{raw};
 
-    # Polish some values.
-    for ( qw(title composer) ) {
-	$self->{$_} =~ s/'/’/g;
-    }
-
     # iRealPro format must start with "1r34LbKcu7" magic.
     unless ( !!($self->{variant} eq "irealpro")
 	     ==
@@ -77,6 +71,36 @@ sub parse {
     delete $self->{raw} unless $self->{debug};
 
     return $self;
+}
+
+sub export {
+    my ( $self, %args ) = @_;
+
+    my $v = $args{variant} || $self->{variant};
+
+    if ( $v eq "irealbook" ) {
+	return join( "=",
+		     $self->{title},
+		     $self->{composer},
+		     $self->{style},
+		     $self->{key},
+		     $self->{a3} || '',
+		     $self->{data},
+		   );
+    }
+
+    return join( "=",
+		 $self->{title},
+		 $self->{composer},
+		 $self->{a2} || '',
+		 $self->{style},
+		 $self->{key},
+		 $self->{a5} || '',
+		 obfuscate( $self->{data} ),
+		 $self->{actual_style} || '',
+		 $self->{actual_tempo} || 0,
+		 $self->{actual_repeats} || 0,
+	       );
 }
 
 # Obfuscate...

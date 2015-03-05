@@ -26,7 +26,7 @@ sub parse {
     }
 
     # Split the playlist into songs.
-    my @a = split( '===', $data );
+    my @a = split( '===', $data, -1 );
 
     if ( @a > 1 ) {		# song===song===song===ThePlaylist
 	$self->{name} = pop(@a);
@@ -42,6 +42,17 @@ sub parse {
     }
 
     return $self;
+}
+
+sub export {
+    my ( $self, %args ) = @_;
+
+    my $r = join( "===",
+		  map { $_->export( %args ) } @{ $self->{songs} } );
+
+    $r .= "===" . $self->{name} if defined $self->{name};
+
+    return $r;
 }
 
 1;

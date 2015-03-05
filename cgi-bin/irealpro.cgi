@@ -3,8 +3,8 @@
 # Author          : Johan Vromans
 # Created On      : Tue Mar  3 11:09:45 2015
 # Last Modified By: Johan Vromans
-# Last Modified On: Thu Mar  5 15:49:44 2015
-# Update Count    : 154
+# Last Modified On: Thu Mar  5 21:55:59 2015
+# Update Count    : 169
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -58,9 +58,23 @@ $tt->add( "data.raw", CGI::param("uri") );
 print( "Content-Type: text/html\n\n");
 print( $tt->expand( tpl_head() ) );
 
-if ( $u->{playlist}->{name} ) {
-    $tt->add( "playlist", $u->{playlist}->{name} );
-    print( $tt->expand("<p><strong>Playlist: [% playlist %]</strong></p>\n") );
+if ( CGI::param("uri") ne $u->export ) {
+    my @t1 = split( //, $u->export );
+    my @t2 = split( //, CGI::param("uri") );
+    my $i = 0;
+    for ( ;; ) {
+	last unless $t1[$i] eq $t2[$i];
+	$i++;
+    }
+    print( "  <p class=\"title\">Import/export check: " .
+	   "<font color=\"FF4040\">FAIL</font></p>\n",
+	   "  <p class=\"subtitle\">", @t1[0..$i-1],
+	   "<font color=\"FF4040\">$t1[$i]</font>",
+	   @t1[$i+1..$#t1], "</p>\n" );
+}
+if ( defined $u->{playlist}->{name} ) {
+    $tt->add( "playlist", $u->{playlist}->{name} || "<NoName>" );
+    print( $tt->expand("<p class=\"title\">Playlist: [% playlist %]</p>\n") );
 }
 
 # Process the song(s).
