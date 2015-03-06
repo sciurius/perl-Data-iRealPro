@@ -3,8 +3,8 @@
 # Author          : Johan Vromans
 # Created On      : Tue Mar  3 11:09:45 2015
 # Last Modified By: Johan Vromans
-# Last Modified On: Thu Mar  5 21:55:59 2015
-# Update Count    : 169
+# Last Modified On: Fri Mar  6 17:35:34 2015
+# Update Count    : 189
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -17,7 +17,7 @@ use CGI::Carp qw(fatalsToBrowser);
 use lib "/home/jv/lib/perl5";
 use lib "/home/jv/src/Music-iRealPro/lib";
 
-use Text::Template::Tiny;
+use Template::Tiny;
 use Music::iRealPro::URI;
 
 my $my_package = "Sciurix";
@@ -33,7 +33,8 @@ my $uri = CGI::param("uri");
 
 binmode STDOUT => ':utf8';
 
-my $tt = Text::Template::Tiny->new;
+my $tt = Template::Tiny->new;
+my $tv;				# template variables
 
 unless ( $uri ) {
     print_form();
@@ -50,15 +51,14 @@ $v =~ s/^(.)(....)(.*)/$1.ucfirst($2).ucfirst($3)/e;
 my $irp_site = "http://www.irealpro.com";
 my $irp_icon = "$irp_site/wp-content/uploads/2013/10/irealpro-icon.png";
 
-$tt->add( "site.name", "$v Data Analyzer" );
-$tt->add( "irp.site", $irp_site );
-$tt->add( "irp.icon", $irp_icon );
-$tt->add( "data.raw", CGI::param("uri") );
+$tv->{site}->{name} = "$v Data Analyzer";
+$tv->{irp}->{site} = $irp_site;
+$tv->{irp}->{icon} = $irp_icon;
+$tv->{data}->{raw} = CGI::param("uri");
 
 print( "Content-Type: text/html\n\n");
-print( $tt->expand( tpl_head() ) );
 
-if ( CGI::param("uri") ne $u->export ) {
+if ( 0 && CGI::param("uri") ne $u->export ) {
     my @t1 = split( //, $u->export );
     my @t2 = split( //, CGI::param("uri") );
     my $i = 0;
@@ -73,21 +73,23 @@ if ( CGI::param("uri") ne $u->export ) {
 	   @t1[$i+1..$#t1], "</p>\n" );
 }
 if ( defined $u->{playlist}->{name} ) {
-    $tt->add( "playlist", $u->{playlist}->{name} || "<NoName>" );
-    print( $tt->expand("<p class=\"title\">Playlist: [% playlist %]</p>\n") );
+    $tv->{playlist}->{name} = $u->{playlist}->{name} || "<NoName>";
 }
 
 # Process the song(s).
 my $song = 0;
+my @songs;
+
 foreach my $s ( @{ $u->{playlist}->{songs} } ) {
     $song++;
-
-    $tt->add( "song.title",
+    push( @songs,
+	  { index => $song,
+	    title =>
 	      join( "",
-		    ( $song > 1 ) ? "Song $song: " : "Song: ",
+		    ( $song > 1 || $tv->{playlist}->{name} ) ? "Song $song: " : "Song: ",
 		    $s->{title},
-		    " (", $s->{composer},  ")" ) );
-    $tt->add( "song.subtitle",
+		    " (", $s->{composer},  ")" ),
+	    subtitle =>
 	      join( "",
 		    "Style: ", $s->{style},
 		    $s->{actual_style}
@@ -97,22 +99,30 @@ foreach my $s ( @{ $u->{playlist}->{songs} } ) {
 		    ? ( "; tempo: ", $s->{actual_tempo} ) : (),
 		    $s->{actual_repeats} && $s->{actual_repeats} > 1
 		    ? ( "; repeat: ", $s->{actual_repeats} ) : (),
-		  ) );
-    $tt->add( "song.cooked", $s->{data} );
-    $tt->add( "song.index", $song );
-    print( $tt->expand( tpl_song() ) );
+		  ),
+	    cooked => $s->{data},
+	  } );
 }
 
-print $tt->expand( tpl_tail() );
+$tv->{songs} = \@songs;
+
+print( $tt->expand( tpl_playlist() ) );
 
 exit (0);
 
 ################ Subroutines ################
 
+sub Template::Tiny::expand {
+    my ( $self, $inp ) = @_;
+    my $res;
+    $self->process( $inp, $tv, \$res );
+    $res;
+}
+
 sub print_form {
     my $url = "http://" . $ENV{SERVER_NAME} . ":" . $ENV{SERVER_PORT} .
       $ENV{SCRIPT_NAME} . "?uri=%s";
-    $tt->add( url => $url );
+    $tv->{url} = $url;
     print( "Content-type: text/html\n\n",
 	   $tt->expand( tpl_form() ) );
 }
@@ -120,7 +130,7 @@ sub print_form {
 ################ Templates ################
 
 sub tpl_form {
-    <<EOD;
+    \<<'EOD';
 <!DOCTYPE html>
 <html>
 <head>
@@ -139,8 +149,8 @@ sub tpl_form {
 EOD
 }
 
-sub tpl_head {
-    <<EOD;
+sub tpl_playlist {
+    \<<'EOD';
 <!DOCTYPE html>
 <html>
 <head>
@@ -181,11 +191,10 @@ function showspaces(form,on) {
            onclick='document.irform.uri.value="";return false'>
     <input name="submit" value="Analyze" type="submit">
   </form>
-EOD
-}
-
-sub tpl_song {
-    <<EOD;
+  [% IF playlist.name %]
+  <p class="title">Playlist: [% playlist.name %]</p>
+  [% END %]
+  [% FOREACH song IN songs %]
   <p class="title">[% song.title %]</p>
   <p class="subtitle">[% song.subtitle %]</p>
   <form method="post" id="form[% song.index %]">
@@ -197,11 +206,7 @@ sub tpl_song {
            onclick='javascript:showspaces("form[% song.index %]",0);return false'>
   </form>
   <hr>
-EOD
-}
-
-sub tpl_tail {
-    <<EOD;
+  [% END %]
 </body>
 </html>
 EOD
