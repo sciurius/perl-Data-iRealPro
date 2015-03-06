@@ -9,6 +9,7 @@ package Music::iRealPro::URI;
 our $VERSION = "0.01";
 
 use Music::iRealPro::Playlist;
+use Encode qw(decode_utf8 encode_utf8);
 
 sub new {
     my ( $pkg, %args ) = @_;
@@ -20,9 +21,10 @@ sub new {
 sub parse {
     my ( $self, $data ) = @_;
 
-    # Un-URI-escape.
+    # Un-URI-escape and decode.
     $data =~ s/[\r\n]*//g;
     $data =~ s/%([0-9a-f]{2})/sprintf("%c",hex($1))/gie;
+    $data = decode_utf8($data);
 
     $data =~ s;^.+(irealb(?:ook)?://.*?)(?:$|\").*;$1;s;
     $self->{data} = $data if $self->{debug};
@@ -48,7 +50,7 @@ sub export {
 
     my $v = $args{variant} || $self->{variant};
 
-    my $r = $self->{playlist}->export( %args );
+    my $r = encode_utf8( $self->{playlist}->export( %args ) );
 
     if ( $args{html} || $args{uriencode} || !defined( $args{uriencode} ) ) {
 	$r =~ s/([^-_."A-Z0-9a-z*\/\'])/sprintf("%%%02X", ord($1))/ge;
