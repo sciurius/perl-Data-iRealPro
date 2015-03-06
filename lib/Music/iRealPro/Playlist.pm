@@ -31,6 +31,14 @@ sub parse {
     if ( @a > 1 ) {		# song===song===song===ThePlaylist
 	$self->{name} = pop(@a);
     }
+    elsif ( $self->{variant} eq "irealbook" ) {
+	my @b = split( '=', $data, -1 );
+	$self->{name} = pop(@b);
+	@a = ();
+	while ( @b ) {
+	    push( @a, join( "=", splice( @b, 0, 6 ) ) );
+	}
+    }
 
     # Process the song(s).
     foreach ( @a ) {
@@ -47,10 +55,12 @@ sub parse {
 sub export {
     my ( $self, %args ) = @_;
 
-    my $r = join( "===",
+    my $dashes = $self->{variant} eq "irealbook" ? "=" : "===";
+
+    my $r = join( $dashes,
 		  map { $_->export( %args ) } @{ $self->{songs} } );
 
-    $r .= "===" . $self->{name} if defined $self->{name};
+    $r .= $dashes . $self->{name} if defined $self->{name};
 
     return $r;
 }
