@@ -195,7 +195,7 @@ sub irealb {
 
 sub _export {
     my ( $s ) = @_;
-    $s //= irealbook;
+    $s //= irealb;
     binmode( STDOUT, ':utf8');
     print STDOUT $s, "\n";
     undef $song;
@@ -229,12 +229,10 @@ Modifiers are m 7 m7 maj7 9 11 13 aug 7b5 m7b5 dim dim7.
 
 my $_key = "C";
 my $_mod = "Maj";
-my $_dur = 4;
 
 sub _chord {
     my ( $key, $mod, $dur ) = @_;
-    $_dur = $dur if $dur;
-    $section->add_chord( $key, $mod, $_dur  );
+    $section->add_chord( $key, $mod, $dur  );
 }
 
 for my $key ( qw( A B C D E F G
@@ -258,12 +256,13 @@ for my $key ( qw( A B C D E F G
        "m7b5"  => "Min7(b5)",
        "dim"   => "Dim",
        "dim7"  => "Dim7",
+       "sus4"  => "Sus4",
     );
 
     no strict 'refs';
     while ( my ($k, $t) = each( %m ) ) {
 	*{ __PACKAGE__ . '::' . $key.$k } =
-	  sub { &_chord( $k2, $t, $_[0] ) };
+	  sub { &_chord( $k2, $t, $_[0]||0 ) };
 	push( @EXPORT, $key.$k );
     }
 }
