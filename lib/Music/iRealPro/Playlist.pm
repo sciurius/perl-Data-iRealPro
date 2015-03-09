@@ -33,10 +33,13 @@ sub parse {
     }
     elsif ( $self->{variant} eq "irealbook" ) {
 	my @b = split( '=', $data, -1 );
-	$self->{name} = pop(@b);
 	@a = ();
-	while ( @b ) {
+	while ( @b >= 6 ) {
 	    push( @a, join( "=", splice( @b, 0, 6 ) ) );
+	}
+	$self->{name} = pop(@b);
+	if ( @b ) {
+	    Carp::croak( "Incorrect ", $self->{variant}, " format 2 " . scalar(@b) );
 	}
     }
 
