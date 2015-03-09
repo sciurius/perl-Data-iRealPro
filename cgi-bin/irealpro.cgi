@@ -3,8 +3,8 @@
 # Author          : Johan Vromans
 # Created On      : Tue Mar  3 11:09:45 2015
 # Last Modified By: Johan Vromans
-# Last Modified On: Fri Mar  6 17:35:34 2015
-# Update Count    : 189
+# Last Modified On: Fri Mar  6 18:04:19 2015
+# Update Count    : 190
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -184,7 +184,7 @@ function showspaces(form,on) {
     [% site.name %]
   </h1>
   <p class="title">Original URI:</p>
-  <form method="post"name="irform">
+  <form method="post" name="irform">
     <textarea name="uri" rows="5" cols="100">[% data.raw %]</textarea>
     <br>
     <input name="clear" value="Clear" type="submit"
