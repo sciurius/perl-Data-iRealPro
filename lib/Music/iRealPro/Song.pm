@@ -42,7 +42,8 @@ our $VERSION = 0.01;
 use Music::iRealPro::Opus;
 use Music::ChordBot::Opus::Section;
 
-our @EXPORT = qw( song chord composer section timesig tempo Coda
+our @EXPORT = qw( song chord composer section timesig tempo Coda Segno
+		  DS_al_Coda repeat ending
 		  style key space output irealbook irealb );
 use base 'Exporter';
 
@@ -150,12 +151,39 @@ sub Coda {
     $section->add_control("coda");
 }
 
+sub Segno {
+    $section->add_control("segno");
+}
+
+sub DS_al_Coda {
+    $section->add_control("D.S. al Coda");
+}
+
 sub space(;$) {
     $section->add_control("space", $_[0]);
 }
 
+my $got_variant;
+sub repeat(&) {
+    my ( $code ) = @_;
+    $got_variant = 0;
+    $section->add_control("repeat");
+    $code->();
+    $section->add_control("end repeat") unless $got_variant;
+}
+
+sub ending(&;$) {
+    my ( $code, $count ) = @_;
+    $got_variant++;
+    $section->add_control( "ending " . ( $count || $got_variant ) );
+    $code->();
+    $section->add_control("end repeat") if $count;
+}
+
 # Automatically export the song at the end of the program.
 sub END {
+    #use Data::Dumper;
+    #warn Dumper($song);
     _export() if $song;
 }
 
@@ -169,8 +197,8 @@ This is the way songs are imported into iRealPro.
 B<text>: Generates the text of the song only. For convenience, the
 text is url-escaped so it can be pasted into the web editor.
 
-B<plain>: Plain, readable text. This is mainly for developemen and
-debugging.
+B<plain>: Plain, readable text in irealbook format. This is mainly for
+developemen and debugging.
 
 =cut
 
@@ -195,7 +223,7 @@ sub irealb {
 
 sub _export {
     my ( $s ) = @_;
-    $s //= irealb;
+    $s //= $output eq "plain" ? irealbook : irealb;
     binmode( STDOUT, ':utf8');
     print STDOUT $s, "\n";
     undef $song;
@@ -223,7 +251,7 @@ chord modifier. So C<C> is C major, C<Cm> is C minor, and so on.
 Chord keys are A B C D E F G Ab Bb Db Eb Gb Ais Cis Dis Fis Gis.
 Also allowed are flat variants As Bes Des Es Ges.
 
-Modifiers are m 7 m7 maj7 9 11 13 aug 7b5 m7b5 dim dim7.
+Modifiers are m 7 m7 maj7 9 11 13 aug 7b5 m7b5 dim dim7 sus4.
 
 =cut
 

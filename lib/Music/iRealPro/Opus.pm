@@ -53,6 +53,7 @@ sub irealbook {
     };
 
     my $sysbeats = 0;
+    my $p_timesig = "";
 
     foreach my $section ( @{ $self->data->{sections} } )  {
 	my $beatspermeasure = $section->{style}->{beats} // 4;
@@ -61,7 +62,10 @@ sub irealbook {
 	$ir .= " " x (16 - $sysbeats) if $sysbeats;
 	$sysbeats = 0;
 
-	$ir .= "[" . timesig( $beatspermeasure, $beatstype );
+	$ir .= "[";
+	my $t = timesig( $beatspermeasure, $beatstype );
+	$ir .= $t unless $t eq ( $t = $p_timesig );
+
 	if ( $section->{name} ) {
 	    $ir .= ( $_namemap{ $section->{name} }
 	      //  "<*72" . $section->{name} . ">" );
@@ -114,14 +118,38 @@ sub irealbook {
 		$ir .= "Q" . $space;
 		next;
 	    }
+	    if ( $el->{is_a} eq "segno" ) {
+		$maybecomma->();
+		$ir .= "S";
+		next;
+	    }
+	    if ( $el->{is_a} eq "D.S. al Coda" ) {
+		$ir .= "<D.S. al Coda>";
+		next;
+	    }
+	    if ( $el->{is_a} eq "repeat" ) {
+		$ir =~ s/[|\[]$//;
+		$ir .= "{";
+		next;
+	    }
+	    if ( $el->{is_a} eq "end repeat" ) {
+		$ir =~ s/[|\]]$//;
+		$ir .= "}";
+		next;
+	    }
+	    if ( $el->{is_a} =~ /^ending (\d+)/ ) {
+		$ir .= "|N$1";
+		$beats = 0;
+		next;
+	    }
 	    if ( $el->{is_a} eq "space" ) {
 		my $space = $el->{param}->[0] // 16 - $sysbeats;
 		if ( $ir =~ /^(.*)\|$/ ) {
 		    $ir = $1;
 		}
 		$space = 0 if $space == 16;
-		$ir .= "]" . ( " " x $space ) . "[";
-		$sysbeats = 0;
+		$ir .= " " x $space;
+		$sysbeats = $space;
 		next;
 	    }
 	}
@@ -133,7 +161,11 @@ sub irealbook {
 	}
     }
 
-    $ir =~ s/\]$/Z/;		# End bar
+    $ir =~ s/\]$/Z /;		# End bar
+
+    # Aestethics.
+    $ir =~ s/\[\{/{/g;
+    $ir =~ s/\}\]/}/g;
 
     my $song = Music::iRealPro::SongData->new
       ( variant	     => $variant,
@@ -154,7 +186,7 @@ sub irealbook {
 	)
       );
 
-    return $uri->export( html => 1 );
+    return $uri->export( $type => 1 );
 }
 
 sub timesig {
