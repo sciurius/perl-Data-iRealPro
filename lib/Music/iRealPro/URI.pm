@@ -49,7 +49,7 @@ sub export {
     my ( $self, %args ) = @_;
 
     my $v = $args{variant} || $self->{variant};
-
+    $args{uriencode} //= !$args{plain};
     my $r = encode_utf8( $self->{playlist}->export( %args ) );
 
     if ( $args{html} || $args{uriencode} || !defined( $args{uriencode} ) ) {
