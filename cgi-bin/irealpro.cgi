@@ -3,8 +3,8 @@
 # Author          : Johan Vromans
 # Created On      : Tue Mar  3 11:09:45 2015
 # Last Modified By: Johan Vromans
-# Last Modified On: Thu Mar 12 17:04:05 2015
-# Update Count    : 278
+# Last Modified On: Fri Mar 13 23:39:05 2015
+# Update Count    : 279
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -186,7 +186,7 @@ sub parse_edit {
 	$tv->{actual_style} = $2;
     }
 
-    if ( $data =~ /; key:\s+([^;]+)/ ) {
+    if ( $data =~ /; key:\s+(.+?)(;|$)/ ) {
 	$tv->{key} = $1;
     }
 
