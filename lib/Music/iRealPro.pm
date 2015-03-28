@@ -65,7 +65,7 @@ Opus API (powerful):
   print $song->irealbook, "\n";
 
   # Print HTML for a page accessing this data.
-  # This is the way to import to iReal-B.
+  # This is the way to import to iRealPro.
   print $song->html, "\n";
 
 =head1 DESCRIPTION

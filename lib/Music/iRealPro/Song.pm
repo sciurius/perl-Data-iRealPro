@@ -101,7 +101,7 @@ Associate the given style to the current song.
 =cut
 
 sub style($) {
-    $song->set_style(@_);
+    $song->style($_[0]);
 }
 
 =head2 section I<name>
@@ -142,8 +142,8 @@ sub timesig($$) {
     }
     # ... otherwise change the section style time sig.
     else {
-	$section->{data}->{style}->{beats}   = $bpm;
-	$section->{data}->{style}->{divider} = $div;
+	$section->style->beats($bpm);
+	$section->style->divider($div);
     }
 }
 
@@ -184,7 +184,7 @@ sub ending(&;$) {
 sub END {
     #use Data::Dumper;
     #warn Dumper($song);
-    _export() if $song;
+    _export() if $song && !%Test::More::;
 }
 
 =head2 output [ html | text | plain ]
@@ -257,10 +257,12 @@ Modifiers are m 7 m7 maj7 9 11 13 aug 7b5 m7b5 dim dim7 sus4.
 
 my $_key = "C";
 my $_mod = "Maj";
+my $_dur = 4;
 
 sub _chord {
     my ( $key, $mod, $dur ) = @_;
-    $section->add_chord( $key, $mod, $dur  );
+    $_dur = $dur if $dur;
+    $section->add_chord( $key, $mod, $_dur  );
 }
 
 for my $key ( qw( A B C D E F G
@@ -290,7 +292,7 @@ for my $key ( qw( A B C D E F G
     no strict 'refs';
     while ( my ($k, $t) = each( %m ) ) {
 	*{ __PACKAGE__ . '::' . $key.$k } =
-	  sub { &_chord( $k2, $t, $_[0]||0 ) };
+	  sub { &_chord( $k2, $t, $_[0] ) };
 	push( @EXPORT, $key.$k );
     }
 }

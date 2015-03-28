@@ -21,13 +21,29 @@ Sets the composer name for the song.
 =cut
 
 sub composer { shift->_setget( "composer", @_ ) }
+
+=head2 key I<key>
+
+Sets the key signature for the song.
+
+=cut
+
 sub key { shift->_setget( "key", @_ ) }
+
+=head2 style I<name>
+
+Sets the style for the song.
+
+iRealPro songs have a single style but the styles have builtin
+variants per section (Intro, A, B, C, D, and Coda).
+
+=cut
+
 sub style { shift->_setget( "style" ) }
 
-sub set_style {
-    my ( $self, $style ) = @_;
-    $self->{style} = $style;
-}
+################ Output Generation ################
+
+# Map section names to internal codes.
 
 my %_namemap = (
 		Verse	 => '*v',
@@ -41,10 +57,47 @@ my %_namemap = (
 		D	 => '*D',
 );
 
+=head2 irealb I<args>
+
+Produces the song in iRealPro (iReal-B) format.
+
+The I<args> are key/value pairs.
+
+=over 4
+
+=item variant
+
+Determines which format is wanted for the generated song. Values are
+B<irealbook> and B<irealpro> (default).
+
+=item type
+
+Determines the format of the generated song. Values are B<html>
+(default) and B<text>.
+
+=back
+
+=cut
+
+sub irealb {
+    my ( $self, %args ) = @_;
+
+    $self->irealbook( variant => "irealpro", %args );
+}
+
+=head2 irealbook I<args>
+
+Produces the song in iRealBook format.
+
+The I<args> are the same as for irealb(), but I<variant> defaults to
+B<irealbook>.
+
+=cut
+
 sub irealbook {
     my ( $self, %args ) = @_;
 
-    my $type = delete( $args{type} ) // "html";
+    my $type    = delete( $args{type}    ) // "html";
     my $variant = delete( $args{variant} ) // "irealbook";
     my $ir = '';
 
@@ -55,28 +108,32 @@ sub irealbook {
     my $sysbeats = 0;
     my $p_timesig = "";
 
-    foreach my $section ( @{ $self->data->{sections} } )  {
-	my $beatspermeasure = $section->{style}->{beats} // 4;
-	my $beatstype = $section->{style}->{divider} // 4;
+    foreach my $section ( $self->sections )  {
+
+	my $beatspermeasure = $section->style->beats // 4;
+	my $beatstype = $section->style->divider // 4;
 
 	$ir .= " " x (16 - $sysbeats) if $sysbeats;
 	$sysbeats = 0;
 
 	$ir .= "[";
 	my $t = timesig( $beatspermeasure, $beatstype );
-	$ir .= $t unless $t eq ( $t = $p_timesig );
+	if ( $t ne $p_timesig ) {
+	    $ir .= $t;
+	    $p_timesig = $t;
+	}
 
-	if ( $section->{name} ) {
-	    $ir .= ( $_namemap{ $section->{name} }
-	      //  "<*72" . $section->{name} . ">" );
+	if ( $section->name ) {
+	    $ir .= ( $_namemap{ $section->name }
+	      //  "<*72" . $section->name . ">" );
 	}
 
 	my $beats = 0;
-	foreach my $el ( @{ $section->{chords} } ) {
-	    if ( $el->{is_a} eq "chord" ) {
+	foreach my $el ( @{ $section->chords } ) {
+	    if ( $el->is_a eq "chord" ) {
 		my $chord = $el;
 		my $did = 0;
-		for ( 1..$chord->{duration} ) {
+		for ( 1..$chord->duration ) {
 		    if ( $beats == $beatspermeasure ) {
 			$beats = 0;
 			$ir .= "|";
@@ -87,10 +144,10 @@ sub irealbook {
 		    }
 		    else {
 			$maybecomma->();
-			$ir .= $chord->{root};
-			$ir .= _type( $chord->{type} );
-			if ( $chord->{bass} ) {
-			    $ir .= "/" . $chord->{bass};
+			$ir .= $chord->root;
+			$ir .= _type( $chord->type );
+			if ( $chord->bass ) {
+			    $ir .= "/" . $chord->bass;
 			}
 			$did++;
 		    }
@@ -100,15 +157,15 @@ sub irealbook {
 		}
 		next;
 	    }
-	    if ( $el->{is_a} eq "timesig" ) {
-		( $beatspermeasure, $beatstype ) = @{ $el->{param} };
+	    if ( $el->is_a eq "timesig" ) {
+		( $beatspermeasure, $beatstype ) = $el->params;
 		$ir .= "|" unless $ir =~ /[|\[]$/;
 		$maybecomma->();
 		$ir .= timesig( $beatspermeasure, $beatstype );
 		$beats = 0;
 		next;
 	    }
-	    if ( $el->{is_a} eq "coda" ) {
+	    if ( $el->is_a eq "coda" ) {
 		my $space = '';
 		if ( $ir =~ /^(.*) $/ ) {
 		    $ir = $1;
@@ -118,32 +175,32 @@ sub irealbook {
 		$ir .= "Q" . $space;
 		next;
 	    }
-	    if ( $el->{is_a} eq "segno" ) {
+	    if ( $el->is_a eq "segno" ) {
 		$maybecomma->();
 		$ir .= "S";
 		next;
 	    }
-	    if ( $el->{is_a} eq "D.S. al Coda" ) {
+	    if ( $el->is_a eq "D.S. al Coda" ) {
 		$ir .= "<D.S. al Coda>";
 		next;
 	    }
-	    if ( $el->{is_a} eq "repeat" ) {
+	    if ( $el->is_a eq "repeat" ) {
 		$ir =~ s/[|\[]$//;
 		$ir .= "{";
 		next;
 	    }
-	    if ( $el->{is_a} eq "end repeat" ) {
+	    if ( $el->is_a eq "end repeat" ) {
 		$ir =~ s/[|\]]$//;
 		$ir .= "}";
 		next;
 	    }
-	    if ( $el->{is_a} =~ /^ending (\d+)/ ) {
+	    if ( $el->is_a =~ /^ending (\d+)/ ) {
 		$ir .= "|N$1";
 		$beats = 0;
 		next;
 	    }
-	    if ( $el->{is_a} eq "space" ) {
-		my $space = $el->{param}->[0] // 16 - $sysbeats;
+	    if ( $el->is_a eq "space" ) {
+		my $space = $el->params->[0] // 16 - $sysbeats;
 		if ( $ir =~ /^(.*)\|$/ ) {
 		    $ir = $1;
 		}
@@ -189,6 +246,20 @@ sub irealbook {
     return $uri->export( $type => 1 );
 }
 
+=head2 html
+
+Produces output in the form of a small HTML document that can be
+imported into iRealPro.
+
+=cut
+
+sub html {
+    my ( $self, %args ) = @_;
+    $self->irealbook( variant => "irealpro", type => "html", %args );
+}
+
+################ Helper routines ################
+
 sub timesig {
     my ( $beatspermeasure, $beatstype ) = @_;
 
@@ -206,106 +277,7 @@ sub timesig {
     return $r;
 }
 
-use Music::ChordBot::Opus::Section;
-use Music::ChordBot::Opus::Section::Chord;
-
-my $_dur = 4;
-
-no warnings 'redefine';
-
-#### We need the is_a....
-
-sub Music::ChordBot::Opus::Section::add_chord {
-    my ( $self, $chord ) = @_;
-
-    my $ok = 0;
-    my $data;
-
-    eval { $data = $chord->{data};
-	   push( @{$self->{data}->{chords}},
-		 $data ); $ok = 1 };
-    return if $ok;
-
-    shift;
-
-    my $c = Music::ChordBot::Opus::Section::Chord->new(@_);
-    if ( $c->duration ) {
-	$_dur = $c->duration;
-    }
-    else {
-	$c->duration( $_dur );
-    }
-    $data = $c->data;
-
-    push( @{$self->{data}->{chords}}, $data );
-}
-
-use warnings 'redefine';
-
-#### TODO: Use SongData for this
-
-# Obfuscate...
-# IN:  [T44C   |G   |C   |G   Z
-# OUT: 1r34LbKcu7[T44CXyQ|GXyQ|CXyQ|GXyQZ
-sub obfuscate {
-    my ( $t ) = @_;
-    for ( $t ) {
-	s/   /XyQ/g;		# obfuscating substitution
-	s/ \|/LZ/g;		# obfuscating substitution
-	s/\| x/Kcl/g;		# obfuscating substitution
-	$_ = hussle($_);	# hussle
-	s/^/1r34LbKcu7/;	# add magix prefix
-    }
-    $t;
-}
-
-# Deobfuscate...
-# IN:  1r34LbKcu7[T44CXyQ|GXyQ|CXyQ|GXyQZ
-# OUT: [T44C   |G   |C   |G   Z
-sub deobfuscate {
-    my ( $t ) = @_;
-    for ( $t ) {
-	s/^1r34LbKcu7//;	# remove magix prefix
-	$_ = hussle($_);	# hussle
-	s/XyQ/   /g;		# obfuscating substitution
-	s/LZ/ |/g;		# obfuscating substitution
-	s/Kcl/| x/g;		# obfuscating substitution
-    }
-    $t;
-}
-
-# Symmetric husseling.
-sub hussle {
-    my ( $string ) = @_;
-    my $result = '';
-
-    while ( length($string) > 50 ) {
-
-	# Treat 50-byte segments.
-	my $segment = substr( $string, 0, 50, '' );
-	if ( length($string) < 2 ) {
-	    $result .= $segment;
-	    next;
-	}
-
-	# Obfuscate a 50-byte segment.
-	$result .= reverse( substr( $segment, 45,  5 ) ) .
-		   substr( $segment,  5, 5 ) .
-		   reverse( substr( $segment, 26, 14 ) ) .
-		   substr( $segment, 24, 2 ) .
-		   reverse( substr( $segment, 10, 14 ) ) .
-		   substr( $segment, 40, 5 ) .
-		   reverse( substr( $segment,  0,  5 ) );
-    }
-
-    return $result . $string;
-}
-
-sub irealb {
-    my ( $self, %args ) = @_;
-
-    $self->irealbook( variant => "irealpro", %args );
-}
+# Map chord types WORK IN PROGRESS -- INCOMPLETE AND FAULTY
 
 my %types = ( "Maj"	  => "",
 	      "Min"	  => "-",
