@@ -3,8 +3,8 @@
 # Author          : Johan Vromans
 # Created On      : Thu Mar 12 12:30:00 2015
 # Last Modified By: Johan Vromans
-# Last Modified On: Thu Apr  9 13:22:33 2015
-# Update Count    : 38
+# Last Modified On: Thu Apr  9 14:19:54 2015
+# Update Count    : 45
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -22,8 +22,10 @@ my ($my_name, $my_version) = qw( irpcvt 0.02 );
 use Getopt::Long 2.13;
 
 # Command line options.
+my $variant = "irealpro";
 my $adb = 0;			# directly feed via adb to device
 my $html = 1;			# produce html
+my $uriencode = 1;		# escape URL sensitive characters
 my $verbose = 0;		# verbose processing
 
 # Development options (not shown with -help).
@@ -93,7 +95,6 @@ if ( $data =~ s;^.*(irealb(?:ook)?://.*?)(?:$|\").*;$1;s ) {
     print $res;
 }
 else {
-    my $variant = "irealpro";
     my $tv = {};
 
     if ( $data =~ /^Playlist:\s*(.*)/m ) {
@@ -105,7 +106,7 @@ else {
 	$tv->{composer} = $2;
     }
 
-    if ( $data =~ /Style:\s+([^;(]*)(?:\s+\(([^)]+)\))?(?:;|$)/m ) {
+    if ( $data =~ /Style:\s+([^;(\n]*)(?:\s+\(([^)\n]+)\))?(?:;|$)/m ) {
 	$tv->{style} = $1;
 	$tv->{actual_style} = $2;
     }
@@ -154,7 +155,7 @@ else {
 		$uri->export( html => 0 ) );
     }
     else {
-	print $uri->export( html => $html );
+	print $uri->export( uriencode => $uriencode, html => $html );
     }
 }
 
@@ -177,6 +178,11 @@ sub neatify {
 
 sub yfitaen {
     my ( $t ) = @_;
+
+    $t =~ s/\s+//g;
+    $t =~ s/_/ /g;
+    $t =~ s/\<(\*\d\d?)D\.S\.\s*al\s*(Coda|Fine)\>/<$1D.S. al $2>/g;
+    return $t;
 
     # Remove markup whitespace and replace underscores.
     # Basically, the reverse of neatify.
@@ -221,6 +227,8 @@ sub app_options {
 	GetOptions('ident'	=> \$ident,
 		   'verbose'	=> \$verbose,
 		   'adb'	=> \$adb,
+		   'variant=s'	=> \$variant,
+		   'uriencode!'	=> \$uriencode,
 		   'html!'	=> \$html,
 		   'trace'	=> \$trace,
 		   'help|?'	=> \$help,
