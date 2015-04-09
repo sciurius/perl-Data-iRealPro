@@ -1,0 +1,346 @@
+#!/usr/bin/perl
+
+# Author          : Johan Vromans
+# Created On      : Thu Mar 12 12:30:00 2015
+# Last Modified By: Johan Vromans
+# Last Modified On: Thu Apr  9 13:22:33 2015
+# Update Count    : 38
+# Status          : Unknown, Use with caution!
+
+################ Common stuff ################
+
+use strict;
+use warnings;
+
+# Package name.
+my $my_package = 'Sciurix';
+# Program name and version.
+my ($my_name, $my_version) = qw( irpcvt 0.02 );
+
+################ Command line parameters ################
+
+use Getopt::Long 2.13;
+
+# Command line options.
+my $adb = 0;			# directly feed via adb to device
+my $html = 1;			# produce html
+my $verbose = 0;		# verbose processing
+
+# Development options (not shown with -help).
+my $debug = 0;			# debugging
+my $trace = 0;			# trace (show process)
+my $test = 0;			# test mode.
+
+# Process command line options.
+app_options();
+
+# Post-processing.
+$trace |= ($debug || $test);
+
+################ Presets ################
+
+################ The Process ################
+
+use Music::iRealPro::URI;
+use Template::Tiny;
+use Data::Dumper;
+
+my $u = Music::iRealPro::URI->new;
+
+my $data = shift || do { local $/; <> };
+
+if ( $data =~ s;^.*(irealb(?:ook)?://.*?)(?:$|\").*;$1;s ) {
+    $u->parse($data);
+
+    my $tv;			# for templater
+
+    if ( defined $u->{playlist}->{name} ) {
+	$tv->{playlist}->{name} = $u->{playlist}->{name} || "<NoName>";
+    }
+
+    my $song = 0;
+    my @songs;
+
+    foreach my $s ( @{ $u->{playlist}->{songs} } ) {
+	$song++;
+	push( @songs,
+	      { index => $song,
+		title =>
+		  join( "",
+			( $song > 1 || $tv->{playlist}->{name} ) ? "Song $song: " : "Song: ",
+			$s->{title},
+			" (", $s->{composer},  ")" ),
+		subtitle =>
+		  join( "",
+			"Style: ", $s->{style},
+			$s->{actual_style}
+			? ( " (", $s->{actual_style}, ")" ) : (),
+			$s->{key} ? ( "; key: ", $s->{key} ) : (),
+			$s->{actual_tempo}
+			? ( "; tempo: ", $s->{actual_tempo} ) : (),
+			$s->{actual_repeats} && $s->{actual_repeats} > 1
+			? ( "; repeat: ", $s->{actual_repeats} ) : (),
+		      ),
+		cooked => neatify( $s->{data} ),
+	      } );
+    }
+
+    my $tt = Template::Tiny->new;
+    my $res;
+    $tv->{songs} = \@songs;
+
+    $tt->process( tpl(), $tv, \$res );
+    print $res;
+}
+else {
+    my $variant = "irealpro";
+    my $tv = {};
+
+    if ( $data =~ /^Playlist:\s*(.*)/m ) {
+	$tv->{pl_name} = $1 unless $1 eq "<NoName>";
+    }
+
+    if ( $data =~ /^Song(?:\s+\d+)?:\s+(.*?)\s+\((.*?)\)/m ) {
+	$tv->{title} = $1;
+	$tv->{composer} = $2;
+    }
+
+    if ( $data =~ /Style:\s+([^;(]*)(?:\s+\(([^)]+)\))?(?:;|$)/m ) {
+	$tv->{style} = $1;
+	$tv->{actual_style} = $2;
+    }
+
+    if ( $data =~ /; key:\s+([^;\n]+)/ ) {
+	$tv->{key} = $1;
+    }
+
+    if ( $data =~ /; tempo:\s+(\d+)/ ) {
+	$tv->{actual_tempo} = $1;
+    }
+    if ( $data =~ /; repeats?:\s+(\d+)/ ) {
+	$tv->{actual_repeats} = $1;
+    }
+
+    $data =~ s/^.*?\n\n//s;
+
+    # Build the song...
+    my $song = Music::iRealPro::SongData->new
+      ( variant	     => $variant,
+	title	     => $tv->{title},
+	composer     => $tv->{composer} || "Composer",
+	style	     => $tv->{style}    || "Rock Ballad",
+	key	     => $tv->{key}      || "C",
+	actual_tempo => $tv->{actual_tempo}    || "0",
+	actual_style => $tv->{actual_style} || "",
+     );
+    $song->{data} = yfitaen($data);
+
+    # Build a playlist for the song...
+    my $pl = Music::iRealPro::Playlist->new
+      ( variant      => $variant,
+	songs        => [ $song ],
+	$tv->{pl_name} ? ( name => $tv->{pl_name} ) : (),
+      );
+
+    # Build a URI for the playlist...
+    my $uri = Music::iRealPro::URI->new
+      ( variant      => $variant,
+	playlist     => $pl,
+      );
+
+    # And deliver.
+    if ( $adb ) {
+	system( "adb", "shell", "am", "start",
+		$uri->export( html => 0 ) );
+    }
+    else {
+	print $uri->export( html => $html );
+    }
+}
+
+sub neatify {
+    my ( $t ) = @_;
+
+    $t =~ s/ / _ /g;
+    while ( $t =~ s/\<(.*?) _ (.*?)\>/<$1 $2>/g ) {}
+    while ( $t =~ s/_ +_/__/g ) {}
+    $t =~ s/([\]\}])/$1\n/g;
+    $t =~ s/([\[\{])/\n$1/g;
+    $t =~ s/\n\n+/\n/g;
+    $t =~ s/^\n+//;
+    $t =~ s/^ +_/_/mg;
+    $t =~ s/_ +$/_/mg;
+    $t =~ s/\n+$/\n/;
+
+    return $t;
+}
+
+sub yfitaen {
+    my ( $t ) = @_;
+
+    # Remove markup whitespace and replace underscores.
+    # Basically, the reverse of neatify.
+    $t =~ s/^_/ _/mg;
+    $t =~ s/_$/_ /mg;
+    $t =~ s/[\n\r]+//g;
+    $t =~ s/(\s+)(_+)(\s+)/" " x length($2)/ge;
+
+    return $t;
+}
+
+sub tpl {
+    \<<'EOD';
+[% FOREACH song IN songs -%]
+[% song.title %]
+[% song.subtitle %]
+[% IF playlist.name %]Playlist: [% playlist.name %]
+[% END %]
+[% song.cooked %]
+[% END %]
+EOD
+}
+
+exit 0;
+
+################ Subroutines ################
+
+sub app_options {
+    my $help = 0;		# handled locally
+    my $ident = 0;		# handled locally
+    my $man = 0;		# handled locally
+
+    my $pod2usage = sub {
+        # Load Pod::Usage only if needed.
+        require Pod::Usage;
+        Pod::Usage->import;
+        &pod2usage;
+    };
+
+    # Process options.
+    if ( @ARGV > 0 ) {
+	GetOptions('ident'	=> \$ident,
+		   'verbose'	=> \$verbose,
+		   'adb'	=> \$adb,
+		   'html!'	=> \$html,
+		   'trace'	=> \$trace,
+		   'help|?'	=> \$help,
+		   'man'	=> \$man,
+		   'debug'	=> \$debug)
+	  or $pod2usage->(2);
+    }
+    if ( $ident or $help or $man ) {
+	print STDERR ("This is $my_package [$my_name $my_version]\n");
+    }
+    if ( $man or $help ) {
+	$pod2usage->(1) if $help;
+	$pod2usage->(VERBOSE => 2) if $man;
+    }
+}
+
+__END__
+
+################ Documentation ################
+
+=head1 NAME
+
+irpcvt - Convert iRealPro data
+
+=head1 SYNOPSIS
+
+irpcvt [options] [data]
+irpcvt [options] < file
+
+=head1 DESCRIPTION
+
+B<irpcvt> converts an iRealPro data URL into readable (and editable)
+text, and vice versa.
+
+Given a document C<url.txt> that contains the following content:
+
+  irealb://Test%3DMe%20Myself%3D%3DRumba%3DD%3D%3D1r34LbKcu7*%7B%5
+  DQyiAXyQXB%7CQyXB%7CQyXB%2CA%5B*%20%20QyXQyX%5DQyXA%7CyQ%7CBX*44
+  T%5BB%2CCXyQ%7CCXyQ%7CCXyQ%7CC%20%20Q%20%7D%5BQ%2CDXyQ%7CDXyQZ%2
+  0%3D%3D180%3D2
+
+(Line breaks for display purposes only, the content should be on a
+single line.)
+
+When this document is fed to B<irpcvt> via its standard input, it will
+print:
+
+  Song: Test (Me Myself)
+  Style: Rumba; key: D; tempo: 180; repeat: 2;
+
+  [T44*iA ___ |A ___ ]
+  ________
+  [*A,B ___ |B ___ |B ___ |B ___ ]
+  {*B,C ___ |C ___ |C ___ |C __ Q _ }
+  [Q,D ___ |D ___ Z _
+
+Likewise, when the latter is given to B<irpcvt>, it will produce:
+
+  <!DOCTYPE html>
+  <html>
+    <head>
+    <title>Test</title>
+  </head>
+  <body>
+    <h1>Test</h1>
+    <p><a href="irealb://Test%3DMe%20Myself%3D ... %3D180%3D0">Test</a></p>
+    <p><font size="-1">Generated by Music::iRealPro::URI version 0.01.</font></p>
+  </body>
+  </html>
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<--html>
+
+Generates a small HTML document wrapping the iRealPro data URL.
+
+Default, can be switched off with B<--nohtml>.
+
+=item B<--adb>
+
+Feeds the resultant iRealPro URL directly into an iRealPro intent via
+the Android Debugging Bridge B<adb>.
+
+=item B<--help>
+
+Prints a brief help message and exits.
+
+=item B<--man>
+
+Prints the manual page and exits.
+
+=item B<--ident>
+
+Prints program identification.
+
+=item B<--verbose>
+
+More verbose information.
+
+=item I<file>
+
+Input file(s).
+
+=back
+
+=cut
+
+Johan Vromans <jvromans@squirrel.nl>
+
+=head1 COPYRIGHT
+
+This programs is Copyright 2015, Squirrel Consultancy.
+
+The format of the iRealPro data URL may be copyrighted by iRealPro.
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the Perl Artistic License or the GNU General
+Public License as published by the Free Software Foundation; either
+version 2 of the License, or (at your option) any later version.
+
+=cut
