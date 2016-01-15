@@ -31,7 +31,7 @@ sub decode_playlist {		# or single song
     # Process the song(s).
     foreach my $song ( @{ $u->{playlist}->{songs} } ) {
 	my $res = $self->decode_song($song->{data});
-	$self->interpret($res);
+	$self->interpret( $song, $res );
     }
 }
 
@@ -49,7 +49,7 @@ sub decode_song {
 }
 
 sub interpret {
-    my ( $self, $tokens ) = @_;
+    my ( $self, $song, $tokens ) = @_;
 
     my $res = { tokens => [ @$tokens ],
 		content => [] };
