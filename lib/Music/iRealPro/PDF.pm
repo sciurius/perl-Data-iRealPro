@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Sat Jan 16 00:02:33 2016
-# Update Count    : 140
+# Last Modified On: Sat Jan 16 23:59:08 2016
+# Update Count    : 225
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -69,6 +69,28 @@ sub parsefile {
     die("$file: $!\n");
 }
 
+my %smufl =
+  ( barlineSingle	=> "\x{e030}",
+    barlineDouble	=> "\x{e031}",
+    barlineFinal	=> "\x{e032}",
+    repeatLeft		=> "\x{e040}",
+    repeatRight		=> "\x{e041}",
+    dalSegno		=> "\x{e045}",
+    daCapo		=> "\x{e046}",
+    segno		=> "\x{e047}",
+    coda		=> "\x{e048}",
+    timeSig0		=> "\x{e080}", # timeSig1, ...etc...
+    fermata		=> "\x{e4c0}",
+    repeat1Bar		=> "\x{e500}",
+    repeat2Bars		=> "\x{e501}",
+    repeat4Bars		=> "\x{e502}",
+    csymDiminished	=> "\x{e870}",
+    csymHalfDiminished	=> "\x{e871}",
+    csymAugmented	=> "\x{e872}",
+    csymMajorSeventh	=> "\x{e873}",
+    csymMinor		=> "\x{e874}",
+  );
+
 sub interpret {
     my ( $self, $song, $tokens ) = @_;
 warn(Dumper($song));
@@ -83,6 +105,9 @@ warn(Dumper($tokens));
 #    my $chordfont = $pdf->corefont("Helvetica-Bold");
     my $chordfont = $pdf->ttfont("Myriad-CnSemibold.ttf");
     my $markfont = $pdf->corefont("Helvetica-Bold");
+    my $musicfont = $pdf->ttfont("Bravura.otf");
+    my $musicsize = 20;
+    my $musicglyphs = \%smufl;
     my $tm = 720;
     my $lm = 40;
     my $bm = 50;
@@ -98,7 +123,9 @@ warn(Dumper($tokens));
     $text->textline( $x-3, $y+50, $song->{composer} );
     $text->textrline( $rm+3, $y+50, "(".$song->{style}.")" );
 
+    my $prev = [];
     my $new_cell = sub {
+	$prev = [ $x, $y ];
 	$x += $dx;
 	if ( $x > $rm ) {
 	    $x = $lm;
@@ -106,94 +133,33 @@ warn(Dumper($tokens));
 	}
     };
 
+    our $glyph = sub {
+	my ( $x, $y, $smc, $size ) = @_;
+	$text->font( $musicfont, $size || $musicsize );
+	die("Unknown glyph: $smc") unless exists $musicglyphs->{$smc};
+	$text->textcline( $x, $y-3, $musicglyphs->{$smc} );
+    };
 
-    my $draw_bar = sub {
-	my $gfx = $page->gfx;
-	$gfx->save;
-	$gfx->linewidth(1);
-	$gfx->strokecolor("#000000");
-	$gfx->move( $x, $y-5 );
-	$gfx->line( $x, $y+($dy-22) );
-	$gfx->stroke;
-	$gfx->restore;
+    my $glyphl = sub {
+	my ( $x, $y, $smc, $size ) = @_;
+	$text->font( $musicfont, $size || $musicsize );
+	die("Unknown glyph: $smc") unless exists $musicglyphs->{$smc};
+	$text->textline( $x, $y-3, $musicglyphs->{$smc} );
     };
-    my $draw_dbar = sub {
-	my $gfx = $page->gfx;
-	$gfx->save;
-	$gfx->linewidth(1);
-	$gfx->strokecolor("#000000");
-	$gfx->move( $x-1.5, $y-5 );
-	$gfx->line( $x-1.5, $y+($dy-22) );
-	$gfx->stroke;
-	$gfx->move( $x+1.5, $y-5 );
-	$gfx->line( $x+1.5, $y+($dy-22) );
-	$gfx->stroke;
-	$gfx->restore;
-    };
-    my $draw_repeat = sub {
-	my $open = shift;
-	my $gfx = $page->gfx;
-	$gfx->save;
-	$gfx->linewidth(1);
-	$gfx->strokecolor("#ff0000");
-	$text->strokecolor("#ff0000");
+
+    my $glyphx = sub {
 	$text->fillcolor("#ff0000");
-	my $x = $x + 1.5;
-	$x -= 4 if $open;
-	$gfx->move( $x, $y-5 );
-	$gfx->line( $x, $y+($dy-22) );
-	$gfx->stroke;
-	$x += 4 if $open;
-	$text->font( $textfont, 20 );
-	$text->textline( $x-5, $y+2, ":" );
-	$gfx->stroke;
-	$gfx->restore;
-	$text->strokecolor("#000000");
-	$text->fillcolor("#000000");
-    };
-    my $draw_end = sub {
-	my $gfx = $page->gfx;
-	$gfx->save;
-	$gfx->linewidth(1);
-	$gfx->strokecolor("#000000");
-	$gfx->move( $x-2, $y-5 );
-	$gfx->line( $x-2, $y+($dy-22) );
-	$gfx->stroke;
-	$gfx->linewidth(2);
-	$gfx->move( $x+1, $y-5 );
-	$gfx->line( $x+1, $y+($dy-22) );
-	$gfx->stroke;
-	$gfx->restore;
-    };
-    my $draw_time = sub {
-	my ( $t1, $t2 ) = @_;
-	my $gfx = $page->gfx;
-	$gfx->save;
-	$gfx->linewidth(0.6);
-	$text->font( $textfont, 12 );
-	$gfx->strokecolor("#ff0000");
-	$text->strokecolor("#ff0000");
-	$text->fillcolor("#ff0000");
-	my $x = $x - 6;
-	my $y = $y + 9;
-	$text->textcline( $x, $y, $t1);
-	$y -= 12;
-	$text->textcline( $x, $y, $t2);
-	$gfx->move($x-3, $y+10.5);
-	$gfx->line($x+3, $y+10.5);
-	$gfx->stroke;
-	$gfx->restore;
-	$text->strokecolor("#000000");
+	$glyph->(@_);
 	$text->fillcolor("#000000");
     };
 
     my $measure;		# current measure
     my $new_measure = sub {
 	my $last = shift;
-	$draw_bar->();
+	$glyph->( $x, $y, "barlineSingle" );
 	if ( !$last && $x >= $rm ) {
 	    $new_cell->();
-	    $draw_bar->();
+	    $glyph->( $x, $y, "barlineSingle" );
 	}
     };
 
@@ -211,30 +177,41 @@ warn(Dumper($tokens));
     my $i = 0;
     my $barskip = 0;
     my $chordsize = 20;
-    
+
     foreach my $t ( @$tokens ) {
 	$i++;
 
 	my $done = 0;
 
 	if ( $t eq "start section" ) {
-	    $draw_dbar->();
+	    $glyph->( $x, $y, "barlineDouble" );
 	    next;
 	}
 
 	if ( $t eq "start repeat" ) {
-	    $draw_repeat->(1);
+	    $glyphx->( $x, $y, "repeatLeft" );
 	    next;
 	}
 
 	if ( $t eq "end repeat" ) {
-	    $draw_repeat->(0);
-	    $new_cell->();
+	    $glyphx->( $x, $y, "repeatRight" );
+	    $new_cell->() if $x >= $rm;
 	    next;
 	}
 
 	if ( $t =~ /time (\d+)\/(\d+)/ ) {
-	    $draw_time->($1, $2);
+	    my ( $t1, $t2 ) = ( $1, $2 );
+	    $text->font( $musicfont, 14 );
+	    $text->fillcolor("#ff0000");
+	    my $w = $text->advancewidth( $musicglyphs->{timeSig0} ) / 2;
+	    my $x = $x - $w - 3;
+	    $x -= $w if $t1 > 10 || $t2 > 10;
+	    $w = ord( $musicglyphs->{timeSig0} ) - ord("0");
+	    $t1 =~ s/(\d)/sprintf( "%c",$w+ord($1) )/ge;
+	    $t2 =~ s/(\d)/sprintf( "%c",$w+ord($1) )/ge;
+	    $text->textcline( $x, $y+11, $t1 );
+	    $text->textcline( $x, $y+3, $t2 );
+	    $text->fillcolor("#000000");
 	    next;
 	}
 
@@ -248,31 +225,75 @@ warn(Dumper($tokens));
 	}
 
 	if ( $t eq "end" ) {
-	    $draw_end->();
+	    $glyph->( $x, $y, "barlineFinal" );
 	    next;
 	}
 
 	if ( $t eq "end section" ) {
-	    $draw_dbar->();
+	    $glyph->( $x, $y, "barlineDouble" );
 	    $new_cell->();
 	    next;
 	}
 
-	if ( $t eq "bar" || $t eq "end repeat" ) {
+	if ( $t eq "bar" ) {
 	    $new_measure->();
 	    next;
 	}
 
+	if ( $t eq "segno" || $t eq "coda" ) {
+	    local $glyph = $glyphl;
+	    $glyphx->( $x+3, $y+$musicsize+4, $t, $musicsize*0.7 );
+	    next;
+	}
+
+	if ( $t eq "fermata" ) {
+	    local $glyph = $glyphl;
+	    $glyphx->( $x+3, $y+$musicsize+4, $t );
+	    next;
+	}
+
 	if ( $t =~ /^chord\s+(.*)$/ ) {
-	    $text->font( $chordfont, $chordsize );
 	    my $c = $1;
+
+	    if ( $c =~ s/\((.+)\)// ) {
+		my $a = $1;
+		$a =~ s/(?:\*m\*|-)/m/;
+		my ( $x, $y ) = $c ? ( $x, $y ) : @$prev;
+		$text->font( $chordfont, 14 );
+		$text->translate( $x+3, $y+20 );
+		$text->text($a);
+		next unless $c;
+	    }
+
+
 	    $c =~ s/(?:\*m\*|-)/m/;
-	    $text->textline( $x+3, $y, $c );
+	    $text->font( $chordfont, $chordsize );
+	    $text->translate( $x+3, $y );
+	    $text->text($c);
 	    $new_cell->();
 	    next;
 	}
 
+	if ( $t =~ /^alternative\s+(\d)$/ ) {
+	    my $n = $1;
+	    $text->font( $textfont, 12 );
+	    $text->fillcolor("#ff0000");
+	    $text->textline( $x+3, $y+20, $n . "." );
+	    $text->fillcolor("#000000");
+	    my $gfx = $page->gfx;
+	    $gfx->save;
+	    $gfx->strokecolor("#ff0000");
+	    $gfx->move( $x+2, $y+20 );
+	    $gfx->linewidth(1);
+	    $gfx->line( $x+2, $y+30 );
+	    $gfx->line( $x+2*$dx, $y+30 );
+	    $gfx->stroke;
+	    $gfx->restore;
+	    next;
+	}
+
 	if ( $t eq "small" ) {
+	    #### TODO: Not smaller, but narrower!
 	    $chordsize = 14;
 	    next;
 	}
@@ -287,20 +308,16 @@ warn(Dumper($tokens));
 	    $text->font( $markfont, 12 );
 	    $t = "Intro" if $t eq 'i';
 	    $t = "Verse" if $t eq 'v';
-	    $text->strokecolor("#ff0000");
 	    $text->fillcolor("#ff0000");
-	    $text->textline( $x-4, $y+22, $t);
-	    $text->strokecolor("#000000");
+	    $text->textline( $x-6, $y+22, $t);
 	    $text->fillcolor("#000000");
 	    next;
 	}
 
-	if ( $t =~ /^text\s+(\d+)\s+(.*)/ ) {
+	if ( $t =~ /^text\s+(\d+)\s(.*)/ ) {
 	    $text->font( $textfont, 10);
-	    $text->strokecolor("#ff0000");
 	    $text->fillcolor("#ff0000");
 	    $text->textline( $x, $y+($1/3), $2 );
-	    $text->strokecolor("#000000");
 	    $text->fillcolor("#000000");
 	    next;
 	}
@@ -311,9 +328,9 @@ warn(Dumper($tokens));
 	}
 
 	if ( $t =~ /^measure repeat (single|double)$/ ) {
-	    $text->font( $chordfont, $chordsize );
-	    my $c = $1 eq "single" ? "%" : "%%";
-	    $text->textline( $x+2, $y, $c );
+	    $text->font( $musicfont, $chordsize );
+	    my $c = $1 eq "single" ? "repeat1Bar" : "repeat2Bars";
+	    $text->textline( $x+3, $y+5, $musicglyphs->{$c} );
 	    $new_cell->();
 	    next;
 	}
