@@ -202,10 +202,10 @@ developemen and debugging.
 
 =cut
 
-my $output;
+my $output = "html";
 
 sub output {
-    if ( $_[0] =~ /^(text|plain)$/i ) {
+    if ( $_[0] =~ /^(text|plain|am)$/i ) {
 	$output = lc($1);
     }
     else {
@@ -218,12 +218,15 @@ sub irealbook {
 }
 
 sub irealb {
-    $song->irealb( type => $output );
+    $song->irealb( type => $output eq "am" ? "text" : $output );
 }
 
 sub _export {
     my ( $s ) = @_;
     $s //= $output eq "plain" ? irealbook : irealb;
+    if ( $output eq "am" ) {
+	exec( qw( adb shell am start ), $s );
+    }
     binmode( STDOUT, ':utf8');
     print STDOUT $s, "\n";
     undef $song;
