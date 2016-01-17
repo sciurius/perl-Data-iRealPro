@@ -5,35 +5,35 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Sat Jan 16 23:59:08 2016
-# Update Count    : 225
+# Last Modified On: Sun Jan 17 22:50:03 2016
+# Update Count    : 253
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
 
 use strict;
 use warnings;
-
-################ The Process ################
+use Carp;
+use utf8;
 
 package Music::iRealPro::PDF;
 
-use parent qw(Music::iRealPro::Parser);
+our $VERSION = "0.01";
+
+use Music::iRealPro::URI;
+use Music::iRealPro::Tokenizer;
 use Data::Dumper;
 use PDF::API2::Tweaks;
-
-my $output;
+use Text::CSV;
 
 sub new {
     my ( $pkg, $options ) = @_;
 
-    my $self = bless( Music::iRealPro::Parser->new( debug => $options->{debug} ), $pkg );
+    my $self = bless( { variant => "irealpro" }, $pkg );
 
-    for ( qw( trace debug verbose output ) ) {
+    for ( qw( trace debug verbose output variant debug ) ) {
 	$self->{$_} = $options->{$_};
     }
-    $self->{songbook} = [];
-    $self->{pdf} = PDF::API2->new;
 
     # Add font dirs.
     my $fontdir = $ENV{FONTDIR};
@@ -50,23 +50,89 @@ sub new {
     return $self;
 }
 
-sub close {
-    my ( $self ) = @_;
-    return unless $self->{pdf};
-    $self->{pdf}->saveas($self->{output});
-    delete $self->{pdf};
-}
-
 sub parsefile {
     my ( $self, $file, $options ) = @_;
-    if ( open( my $fd, '<', $file ) ) {
-	my $data = do { local $/; <$fd> };
-	# Extract URL.
-	$data =~ s;^.*(irealb(?:ook)?://.*?)(?:$|\").*;$1;s;
-	$self->decode_playlist($data);
-	return;
+
+    open( my $fd, '<', $file ) or die("$file: $!\n");
+
+    my $data = do { local $/; <$fd> };
+    # Extract URL.
+    $data =~ s;^.*(irealb(?:ook)?://.*?)(?:$|\").*;$1;s;
+    $data = "irealbook://" . $data
+      unless $data =~ m;^(irealb(?:ook)?://.*?);;
+
+    my $u = Music::iRealPro::URI->new( data => $data,
+				       debug => $self->{debug} );
+    my $plname = $u->{playlist}->{name};
+    if ( $plname ) {
+	warn( "PLAYLIST: $plname, ",
+	      scalar(@{ $u->{playlist}->{songs} }), " songs\n" )
+	  if $options->{verbose};
+	( my $t = $plname ) =~ s/[ \/:"]/_/g;
+	$self->{output} ||= "$t.pdf";
     }
-    die("$file: $!\n");
+    $self->{output} ||= "__new__.pdf";
+
+    $self->{songbook} = [];
+    $self->{pdf} = PDF::API2->new;
+    my $pageno = 1;
+
+    my $csv_name = $self->{output};
+    $csv_name =~ s/\.pdf$/.csv/i;
+    open( my $csv_fd, ">:encoding(utf8)", $csv_name );
+    my $csv = Text::CSV->new( { binary => 1,
+				quote_space => 0,
+				sep_char => ";" } );
+    $csv->print( $csv_fd,
+		 [ qw( title pages keys composers
+		       collections ), "source types" ] );
+    $csv_fd->print("\n");
+
+    # Process the song(s).
+    foreach my $song ( @{ $u->{playlist}->{songs} } ) {
+	my $res = $self->decode_song($song->{data});
+	$self->interpret( $song, $res );
+
+	my $numpages = $song->{pages};
+	my $pages = $pageno;
+	if ( $numpages > 1 ) {
+	    $pages .= "-" . ( $pageno + $numpages - 1 );
+	    $pageno += $numpages;
+	}
+	else {
+	    $pageno++;
+	}
+	my $key = $song->{key};
+	$key =~ s/-$/m/;
+	my $composer = $song->{composer};
+	$composer = "$2 $1" if $composer =~ /^(.+?) +([^ ]+)$/;
+	$csv->print( $csv_fd,
+		     [ $song->{title},
+		       $pages,
+		       $key,
+		       $composer,
+		       $plname,
+		       "Sheet Music",
+		     ] );
+	$csv_fd->print("\n");
+    }
+    $self->{pdf}->saveas($self->{output});
+    warn("Wrote: ", $self->{output}, "\n") if $self->{verbose};
+    $csv_fd->close;
+    warn("Wrote: $csv_name\n") if $self->{verbose};
+}
+
+sub decode_song {
+    my ( $self, $str ) = @_;
+
+    # Build the tokens array. This reflects as precisely as possible
+    # the contents of the pure data string.
+    my $tokens = Music::iRealPro::Tokenizer->new
+      ( debug   => $self->{debug},
+	variant => $self->{variant},
+      )->tokenize($str);
+
+    return $tokens;
 }
 
 my %smufl =
@@ -177,6 +243,7 @@ warn(Dumper($tokens));
     my $i = 0;
     my $barskip = 0;
     my $chordsize = 20;
+    my $pages = 1;
 
     foreach my $t ( @$tokens ) {
 	$i++;
@@ -345,6 +412,8 @@ warn(Dumper($tokens));
 	next;
 
     }
+
+    $song->{pages} = $pages;
 }
 
 1;
