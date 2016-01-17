@@ -144,10 +144,15 @@ sub irealbook {
 		    }
 		    else {
 			$maybecomma->();
-			$ir .= $chord->root;
-			$ir .= _type( $chord->type );
-			if ( $chord->bass ) {
-			    $ir .= "/" . $chord->bass;
+			if ( $chord->type eq "Silence" ) {
+			    $ir .= "n";
+			}
+			else {
+			    $ir .= $chord->root;
+			    $ir .= _type( $chord->type );
+			    if ( $chord->bass ) {
+				$ir .= "/" . $chord->bass;
+			    }
 			}
 			$did++;
 		    }
@@ -166,6 +171,8 @@ sub irealbook {
 		next;
 	    }
 	    if ( $el->is_a eq "coda" ) {
+		#### TODO: jump must be in last cell
+		#### TODO: position must precede chord
 		my $space = '';
 		if ( $ir =~ /^(.*) $/ ) {
 		    $ir = $1;
@@ -176,12 +183,14 @@ sub irealbook {
 		next;
 	    }
 	    if ( $el->is_a eq "segno" ) {
+		#### TODO: Must precede chord
 		$maybecomma->();
 		$ir .= "S";
 		next;
 	    }
-	    if ( $el->is_a eq "D.S. al Coda" ) {
-		$ir .= "<D.S. al Coda>";
+	    if ( $el->is_a =~ /^D\.S\. al (Coda|Fine)$/ ) {
+		#### TODO: Must precede chord
+		$ir .= "<*66D.S. al $1>";
 		next;
 	    }
 	    if ( $el->is_a eq "repeat" ) {
