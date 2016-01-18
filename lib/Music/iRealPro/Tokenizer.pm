@@ -12,7 +12,7 @@ our $VERSION = "0.10";
 use Data::Dumper;
 
 my $p_root  = qr{ (?: [ABCDEFG][#b]? | W) }x;
-my $p_qual  = qr{ (?: -|\*[^*]*\*|o|h|dim|sus(?:[24])?|\^?7)? }x;
+my $p_qual  = qr{ (?: -|\*[^*]*\*|o|h|dim|7?sus[24]?|\^?7)? }x;
 my $p_extra = qr{ (?: (?:add|sub)? [b#]? [0-9])* }x;
 my $p_chord = qr{ $p_root $p_qual $p_extra (?: / $p_root )? }x;
 
@@ -41,7 +41,7 @@ sub tokenize {
     }
     else {
 	# I'm not sure irealbook allows the chord *mods* .
-	$p_qual  = qr{ (?: -|o|h|dim|sus(?:[24])?|\^?7)? }x;
+	$p_qual  = qr{ (?: -|o|h|dim|7?sus[24]?|\^?7)? }x;
     }
 
     # IMPORTANT: iReal design is visually oriented. All info is added
