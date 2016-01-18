@@ -37,13 +37,6 @@ sub tokenize {
 	  if $self->{debug};
     };
 
-    if ( $self->{variant} eq "irealpro" ) {
-    }
-    else {
-	# I'm not sure irealbook allows the chord *mods* .
-	$p_qual  = qr{ (?: -|o|h|dim|7?sus[24]?|\^?7)? }x;
-    }
-
     # IMPORTANT: iReal design is visually oriented. All info is added
     # to the current cell until the pointer advances to the next cell.
 
