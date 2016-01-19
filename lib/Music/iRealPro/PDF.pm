@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Mon Jan 18 23:21:57 2016
-# Update Count    : 424
+# Last Modified On: Tue Jan 19 12:06:17 2016
+# Update Count    : 478
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -530,6 +530,270 @@ sub scale($) { 2*$_[0] }
 sub make_png {
     my ( $self, $song, $cells ) = @_;
 
+    require Imager;
+    require Imager::Matrix2d;
+
+    # Create a new image.
+    my $im = Imager->new( xsize => scale(595),
+			  ysize => scale(842),
+			  model => 'rgb',
+			) or die( Imager->errstr );
+
+    # Allocate some colors.
+    my $white = "#ffffff";
+    my $black = "#000000";
+    my $red   = "#ff0000";
+
+    # Start with a white page.
+    $im->box( filled => 1 );
+
+    # Create fonts.
+    my $titlefont = $ENV{HOME}."/.fonts/FreeSansBold.ttf";
+    my $textfont  = $ENV{HOME}."/.fonts/FreeSans.ttf";
+    my $chordfont = $ENV{HOME}."/.fonts/Myriad-CnSemibold.ttf";
+    my $chrdfont  = $ENV{HOME}."/.fonts/Myriad-CnSemibold.ttf";
+    my $musicfont = $ENV{HOME}."/.fonts/Bravura.otf";
+    my $markfont  = $titlefont;
+
+    # Make font objects.
+    for ( $titlefont, $textfont, $chordfont, $chrdfont, $musicfont, $markfont ) {
+	$_ = Imager::Font->new( file => $_ );
+    }
+
+    # Condensed font for 'small' mode.
+    $chrdfont->transform( matrix => Imager::Matrix2d->scale( x => 0.7, y => 1 ) );
+    my $chordsize = 20;
+    my $musicsize = $chordsize;
+    my $musicglyphs = \%smufl;
+    my ( $tm, $lm, $bm, $rm) = ( 122,  40, 792, 560 );
+    my $dx = ( $rm - $lm ) / $numcols;
+    my $dy = ( $bm - $tm ) / $numrows;
+    my $x = $lm;
+    my $y = $tm;
+    if ( $dy < 1.6*$musicsize ) {
+	$dy = 1.6*$musicsize;
+    }
+
+    # TODO $im->setThickness( scale(1) );
+
+    my $pages;
+
+    # Draw text, left aligned.
+    my $textl = sub {
+	my ( $x, $y, $font, $size, $t, $col ) = @_;
+	$col ||= $black;
+	$size ||= $musicsize;
+	$_ = scale($_) for $x, $y, $size;
+	$im->string( font => $font, size => $size, aa => 1, color => $col,
+		     x => $x, y => $y, text => $t );
+    };
+
+    # Draw text, centered.
+    my $textc = sub {
+	my ( $x, $y, $font, $size, $t, $col ) = @_;
+	$col ||= $black;
+	$size ||= $musicsize;
+	$_ = scale($_) for $x, $y, $size;
+	my @b = $font->bounding_box( size => $size, string => $t );
+	$x -= $b[6] / 2;
+	$im->string( font => $font, size => $size, aa => 1, color => $col,
+		     x => $x, y => $y, text => $t );
+    };
+
+    # Draw text, right aligned.
+    my $textr = sub {
+	my ( $x, $y, $font, $size, $t, $col ) = @_;
+	$col ||= $black;
+	$size ||= $musicsize;
+	$_ = scale($_) for $x, $y, $size;
+	my @b = $font->bounding_box( size => $size, string => $t );
+	$x -= $b[6];
+	$im->string( font => $font, size => $size, aa => 1, color => $col,
+		     x => $x, y => $y, text => $t );
+    };
+
+    # Default text drawing mode.
+    our $text = $textl;
+
+    # Draw music glyph, centered.
+    my $glyphc = sub {
+	my ( $x, $y, $smc, $size, $col ) = @_;
+	Carp::confess("Unknown glyph: $smc") unless exists $musicglyphs->{$smc};
+	$y += 0.15*$musicsize;
+	$textc->( $x, $y, $musicfont, $size || $musicsize, $musicglyphs->{$smc}, $col );
+    };
+
+    # Draw music glyph, left aligned.
+    my $glyphl = sub {
+	my ( $x, $y, $smc, $size, $col ) = @_;
+	Carp::confess("Unknown glyph: $smc") unless exists $musicglyphs->{$smc};
+	$y += 0.15*$musicsize;
+	$text->( $x, $y, $musicfont, $size || $musicsize, $musicglyphs->{$smc}, $col );
+    };
+
+    # Default glyph drawing mode.
+    our $glyph = $glyphc;
+
+    # Draw music glyph, red, using default glyph mode.
+    my $glyphx = sub {
+	my ( $x, $y, $smc, $size ) = @_;
+	$glyph->( $x, $y, $smc, $size, $red );
+    };
+
+    # Draw headings for a new page.
+    my $newpage = sub {
+	$pages++;
+	my $ddx = 0.15*$musicsize;
+	$textc->( ($lm+$rm)/2-$ddx, $tm-80, $titlefont, 20, $song->{title} );
+	$textl->( $lm-$ddx, $tm-50, $textfont, 17, $song->{composer} )
+	  if $song->{composer};
+	$textr->( $rm+$ddx, $tm-50, $textfont, 17, "(".$song->{style}.")" )
+	  if $song->{style};
+    };
+
+    # Process the cells.
+    for ( my $i = 0; $i < @$cells; $i++ ) {
+
+	# onpage is the cell index relative to the current page.
+	# Note that we do not yet support multi-page songs.
+	my $onpage = $i % ( $numrows * $numcols );
+	if ( !$onpage ) {
+	    # First cell on this page, draw headings and such.
+	    $newpage->();
+	}
+
+	# The current cell.
+	my $cell = $cells->[$i];
+
+	# Cell position on the drawing.
+	$x = $lm +    ( $onpage % $numcols ) * $dx;
+	$y = $tm + int( $onpage / $numcols ) * $dy;
+
+	for ( $cell->lbar ) {
+	    next unless $_;
+	    my $g = /repeatLeft/ ? $glyphx : $glyph;
+	    $g->( $x, $y, $_ );
+	    next;
+	}
+
+	for ( $cell->rbar ) {
+	    next unless $_;
+	    my $g = /repeatRight/ ? $glyphx : $glyph;
+	    $g->( $x+$dx, $y, $_ );
+	    next;
+	}
+
+	for ( $cell->time ) {
+	    next unless $_;
+	    my ( $t1, $t2 ) = @$_;
+	    my @b = $musicfont->bounding_box( size => 14,
+					      string => $musicglyphs->{timeSig0} );
+	    my $w = $b[6];	# advance width
+	    # Move left half $w for centering, and half $w to get
+	    # out of the way.
+	    my $x = $x - $w - 0.05*$musicsize;
+	    # An additinal half $w when double digits are involved.
+	    $x -= $w/2 if $t1 > 10 || $t2 > 10;
+
+	    # Transform ordinary digits into music glyphs.
+	    $w = ord( $musicglyphs->{timeSig0} ) - ord("0");
+	    $t1 =~ s/(\d)/sprintf( "%c",$w+ord($1) )/ge;
+	    $t2 =~ s/(\d)/sprintf( "%c",$w+ord($1) )/ge;
+
+	    $textc->( $x, $y-0.55*$musicsize,
+		      $musicfont, 0.7*$musicsize, "$t1", $red );
+	    $textc->( $x, $y-0.15*$musicsize,
+		      $musicfont, 0.7*$musicsize, "$t2", $red );
+	    next;
+	}
+
+	for ( $cell->sign ) {	# coda, segno, ...
+	    next unless $_;
+	    local $glyph = $glyphl;
+	    $glyphx->( $x+0.15*$musicsize, $y-1.05*$musicsize,
+		       $_, 0.7*$musicsize );
+	    next;
+	}
+
+	for ( $cell->chord ) {	# chords and chordrepeats.
+	    next unless $_;
+	    my $c = $_;
+
+	    my $font = $cell->sz ? $chrdfont : $chordfont;
+	    if ( $c =~ /^repeat(1Bar|2Bars)$/ ) {
+		$text->( $x+0.15*$musicsize, $y-0.25*$musicsize,
+			 $font, $chordsize, $musicglyphs->{$c} );
+		next;
+	    }
+	    if ( $c =~ /^repeat(Slash)$/ ) {
+		$text->( $x+0.4*$musicsize, $y, $font, $chordsize, "/" );
+		next;
+	    }
+
+	    $c =~ s/(?:\*m\*|-)/m/;
+	    $text->( $x+0.15*$musicsize, $y, $font, $chordsize, $c );
+	    next;
+	}
+
+	for ( $cell->subchord ) {
+	    next unless $_;
+	    my $a = $_;
+	    $a =~ s/(?:\*m\*|-)/m/;
+	    $text->( $x+0.15*$musicsize, $y-$musicsize,
+		     $chordfont, 0.7*$musicsize, $a );
+	    next;
+	}
+
+	for ( $cell->alt ) {
+	    next unless $_;
+	    my $n = $_;
+	    $text->( $x+0.15*$musicsize, $y-$musicsize, $textfont,
+		     0.6*$musicsize, $n . ".", $red );
+	    $im->line( color => $red,
+		       x1 => scale($x+0.1*$musicsize),
+		       y1 => scale($y-$musicsize),
+		       x2 => scale($x+0.1*$musicsize),
+		       y2 => scale($y-1.5*$musicsize) );
+	    $im->line( color => $red,
+		       x1 => scale($x+0.1*$musicsize),
+		       y1 => scale($y-1.5*$musicsize),
+		       x2 => scale($x+2*$dx),
+		       y2 => scale($y-1.5*$musicsize) );
+	    next;
+	}
+
+	for ( $cell->mark ) {
+	    next unless $_;
+	    my $t = $_;
+	    $t = "Intro" if $t eq 'i';
+	    $t = "Verse" if $t eq 'v';
+	    $text->( $x-0.3*$musicsize, $y-0.9*$musicsize,
+		     $markfont, 0.6*$musicsize, $t, $red );
+	    next;
+	}
+
+	for ( $cell->text ) {
+	    next unless $_;
+	    my ( $disp, $t ) = @$_;
+	    $text->( $x+0.15*$musicsize, $y-($disp/(80/$musicsize)),
+		     $textfont, 0.5*$musicsize, $t, $red );
+	    next;
+	}
+
+	next;
+
+    }
+
+    $im->write( file => $self->{output} );
+    warn("Wrote: ", $self->{output}, "\n") if $self->{verbose};
+    $song->{pages} = $pages;
+}
+
+=begin notused
+
+sub make_png_gd {
+    my ( $self, $song, $cells ) = @_;
+
     require GD;
     require GD::Image;
 
@@ -736,5 +1000,9 @@ sub make_png {
     warn("Wrote: ", $self->{output}, "\n") if $self->{verbose};
     $song->{pages} = $pages;
 }
+
+=end notused
+
+=cut
 
 1;
