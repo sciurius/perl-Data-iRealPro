@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Wed Jan 20 20:40:19 2016
-# Update Count    : 546
+# Last Modified On: Wed Jan 20 21:03:31 2016
+# Update Count    : 561
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -306,8 +306,10 @@ my %smufl =
 # repeatLeft and Right are too wide. Use a substitute.
 #   repeatLeft		=> "\x{e040}",
 #   repeatRight		=> "\x{e041}",
+#   repeatRightLeft	=> "\x{e042}",
     repeatLeft		=> "\x{e000}\x{e043}", # {:
     repeatRight		=> "\x{e043}\x{e001}", # :}
+    repeatRightLeft	=> "\x{e043}\x{e001}\x{e000}\x{e043}", # :}{:
     repeatDots		=> "\x{e043}",
     dalSegno		=> "\x{e045}",
     daCapo		=> "\x{e046}",
@@ -480,23 +482,25 @@ sub make_pdf {
 
 	for ( $cell->lbar ) {
 	    next unless $_;
-	    if ( /repeatLeft/ ) {
-		$glyphx->( $x, $y, "repeatLeft" );
-	    }
-	    else {
-		$glyph->( $x, $y, $_ );
-	    }
+	    my $g = /^repeat(?:Right)?Left$/ ? $glyphx : $glyph;
+	    $g->( $x, $y, $_ );
 	    next;
 	}
 
 	for ( $cell->rbar ) {
 	    next unless $_;
-	    if ( /repeatRight/ ) {
-		$glyphx->( $x+$dx, $y, "repeatRight" );
+	    my $g = $glyph;
+	    if ( /^repeatRight$/ ) {
+		$g = $glyphx;
+		if ( ($i+1) % $numcols
+		     && $i < @$cells
+		     && $cells->[$i+1]->lbar
+		     && $cells->[$i+1]->lbar eq "repeatLeft" ) {
+		    $cells->[$i+1]->lbar = "repeatRightLeft";
+		    next;
+		}
 	    }
-	    else {
-		$glyph->( $x+$dx, $y, $_ );
-	    }
+	    $g->( $x+$dx, $y, $_ );
 	    next;
 	}
 
@@ -800,14 +804,24 @@ sub make_png {
 
 	for ( $cell->lbar ) {
 	    next unless $_;
-	    my $g = /repeatLeft/ ? $glyphx : $glyph;
+	    my $g = /repeat(?:Right)?Left/ ? $glyphx : $glyph;
 	    $g->( $x, $y, $_ );
 	    next;
 	}
 
 	for ( $cell->rbar ) {
 	    next unless $_;
-	    my $g = /repeatRight/ ? $glyphx : $glyph;
+	    my $g = $glyph;
+	    if ( /^repeatRight$/ ) {
+		$g = $glyphx;
+		if ( ($i+1) % $numcols
+		     && $i < @$cells
+		     && $cells->[$i+1]->lbar
+		     && $cells->[$i+1]->lbar eq "repeatLeft" ) {
+		    $cells->[$i+1]->lbar = "repeatRightLeft";
+		    next;
+		}
+	    }
 	    $g->( $x+$dx, $y, $_ );
 	    next;
 	}
