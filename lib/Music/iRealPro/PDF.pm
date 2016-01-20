@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Tue Jan 19 12:06:17 2016
-# Update Count    : 478
+# Last Modified On: Wed Jan 20 17:22:43 2016
+# Update Count    : 525
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -18,7 +18,7 @@ use utf8;
 
 package Music::iRealPro::PDF;
 
-our $VERSION = "0.01";
+our $VERSION = "0.03";
 
 use Music::iRealPro::URI;
 use Music::iRealPro::Tokenizer;
@@ -84,7 +84,7 @@ sub parsefile {
     my $csv_fd;
     my $csv_name;
     if ( $self->{output} =~ /\.pdf$/i ) {
-	my $csv_name = $self->{output};
+	$csv_name = $self->{output};
 	$csv_name =~ s/\.pdf$/.csv/i;
 	open( $csv_fd, ">:encoding(utf8)", $csv_name );
 	$csv = Text::CSV->new( { binary => 1,
@@ -116,7 +116,7 @@ sub parsefile {
 	my $key = $song->{key};
 	$key =~ s/-$/m/;
 	my $composer = $song->{composer};
-	$composer = "$2 $1" if $composer =~ /^(.+?) +([^ ]+)$/;
+	# $composer = "$2 $1" if $composer =~ /^(.+?) +([^ ]+)$/;
 	$csv->print( $csv_fd,
 		     [ $song->{title},
 		       $pages,
@@ -303,16 +303,19 @@ my %smufl =
     barlineSingle	=> "\x{e030}",
     barlineDouble	=> "\x{e031}",
     barlineFinal	=> "\x{e032}",
-    repeatLeft		=> "\x{e000}\x{e043}",
-#    repeatLeft		=> "\x{e040}",
-#    repeatRight		=> "\x{e041}",
-    repeatRight		=> "\x{e043}\x{e001}",
+# repeatLeft and Right are too wide. Use a substitute.
+#   repeatLeft		=> "\x{e040}",
+#   repeatRight		=> "\x{e041}",
+    repeatLeft		=> "\x{e000}\x{e043}", # {:
+    repeatRight		=> "\x{e043}\x{e001}", # :}
     repeatDots		=> "\x{e043}",
     dalSegno		=> "\x{e045}",
     daCapo		=> "\x{e046}",
     segno		=> "\x{e047}",
     coda		=> "\x{e048}",
     timeSig0		=> "\x{e080}", # timeSig1, ...etc...
+    flat		=> "\x{e260}",
+    sharp		=> "\x{e262}",
     fermata		=> "\x{e4c0}",
     repeat1Bar		=> "\x{e500}",
     repeat2Bars		=> "\x{e501}",
@@ -334,14 +337,14 @@ sub make_pdf {
     my $page;
     my $text;
     my $titlefont = $pdf->corefont("Helvetica-Bold");
-#    my $textfont = $pdf->corefont("TimesRoman");
     my $textfont = $pdf->corefont("Helvetica");
-#    my $chordfont = $pdf->corefont("Helvetica-Bold");
+#   my $chordfont = $pdf->corefont("Helvetica-Bold");
     my $chordfont = $pdf->ttfont("Myriad-CnSemibold.ttf");
     my $markfont = $pdf->corefont("Helvetica-Bold");
     my $musicfont = $pdf->ttfont("Bravura.otf");
     my $musicsize = 20;
     my $musicglyphs = \%smufl;
+    my $chordsize = $musicsize;
     my $tm = 720;
     my $lm = 40;
     my $bm = 50;
@@ -384,6 +387,83 @@ sub make_pdf {
 	$text->fillcolor("#ff0000");
 	$glyph->(@_);
 	$text->fillcolor("#000000");
+    };
+
+    my $chord; $chord = sub {
+	my ( $x, $y, $c, $size ) = @_;
+	$size ||= $chordsize;
+	$c =~ s/(?:\*m\*|-)/m/;
+	my $bass;
+	if ( $c =~ m;(.*?)/(.*); ) {
+	    $bass = $2;
+	    $c = $1;
+	}
+
+	my @c = split ( /([miaugdb#^oh\d])/, $c );
+	my $one = 0.05*$size;
+	my $first = 1;
+	while ( @c ) {
+	    my $c = shift(@c);
+	    if ( $c eq "b" ) {
+		$c = $musicglyphs->{flat};
+		$text->font( $musicfont, $size );
+		$text->translate( $x+$one, $y );
+		$text->text($c);
+		$x += $text->advancewidth($c) + 0.1*$size;
+	    }
+	    elsif ( $c eq "#" ) {
+		$c = $musicglyphs->{sharp};
+		$text->font( $musicfont, $size );
+		$text->translate( $x+$one, $y+0.3*$size );
+		$text->text($c);
+		$x += $text->advancewidth($c) + $one+$one;
+	    }
+	    elsif ( $c =~ /\d/ ) {
+		$text->font( $chordfont, 0.9*$size );
+		$text->translate( $x, $y-0.1*$size );
+		$text->text($c);
+		$x += $text->advancewidth($c);
+	    }
+	    elsif ( $c eq "^" ) {
+		$c = $musicglyphs->{csymMajorSeventh};
+		$text->font( $musicfont, $size );
+		$text->translate( $x+$one, $y );
+		$text->text($c);
+		$x += $text->advancewidth($c) + $one;
+	    }
+	    elsif ( $c eq "o" ) {
+		$c = $musicglyphs->{csymDiminished};
+		$text->font( $musicfont, $size );
+		$text->translate( $x+$one, $y );
+		$text->text($c);
+		$x += $text->advancewidth($c) + $one;
+	    }
+	    elsif ( $c eq "h" ) {
+		$c = $musicglyphs->{csymHalfDiminished};
+		$text->font( $musicfont, $size );
+		$text->translate( $x+$one, $y );
+		$text->text($c);
+		$x += $text->advancewidth($c) + $one;
+	    }
+	    else {
+		$text->font( $chordfont,
+			     $first ? $size : 0.8*$size );
+		$text->translate( $x, $y );
+		$text->text($c);
+		$x += $text->advancewidth($c);
+	    }
+	    $first = 0;
+	}
+	return unless $bass;
+	$text->font( $chordfont, 0.9*$size );
+	my $w = $text->advancewidth("/");
+	$x -= $w/3;
+	$y -= 0.3*$size;
+	$text->translate( $x, $y );
+	$text->text("/");
+	$x += $w;
+	$y -= 0.2*$size;
+	$chord->( $x, $y, $bass, $size );
     };
 
     for ( my $i = 0; $i < @$cells; $i++ ) {
@@ -460,20 +540,13 @@ sub make_pdf {
 		next;
 	    }
 
-	    $c =~ s/(?:\*m\*|-)/m/;
-	    $text->font( $chordfont, $chordsize );
-	    $text->translate( $x+3, $y );
-	    $text->text($c);
+	    $chord->( $x+3, $y, $_ );
 	    next;
 	}
 
 	for ( $cell->subchord ) {
 	    next unless $_;
-	    my $a = $_;
-	    $a =~ s/(?:\*m\*|-)/m/;
-	    $text->font( $chordfont, 14 );
-	    $text->translate( $x+3, $y+20 );
-	    $text->text($a);
+	    $chord->( $x+3, $y+$chordsize, $_, 0.7*$chordsize );
 	    next;
 	}
 
@@ -513,7 +586,7 @@ sub make_pdf {
 	    my ( $disp, $t ) = @$_;
 	    $text->font( $textfont, 10);
 	    $text->fillcolor("#ff0000");
-	    $text->textline( $x, $y+($disp/3), $t );
+	    $text->textline( $x, $y-0.55*$musicsize+($disp/2), $t );
 	    $text->fillcolor("#000000");
 	    next;
 	}
