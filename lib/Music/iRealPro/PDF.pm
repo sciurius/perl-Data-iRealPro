@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Wed Jan 20 23:29:52 2016
-# Update Count    : 621
+# Last Modified On: Thu Jan 21 16:28:45 2016
+# Update Count    : 663
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -30,13 +30,19 @@ sub new {
 
     my $self = bless( { variant => "irealpro" }, $pkg );
 
-    for ( qw( trace debug verbose output variant debug ) ) {
+    for ( qw( trace debug verbose output variant debug crop ) ) {
 	$self->{$_} = $options->{$_} if exists $options->{$_};
     }
 
     $self->{fontdir} ||= $ENV{FONTDIR} || ".";
     $self->{fontdir} .= "/";
     $self->{fontdir} =~ s;/+$;/;;
+
+    # Scaling (bitmaps only).
+    if ( $options->{scale} && $options->{scale} =~ /^[\d.]+$/ ) {
+	no warnings 'redefine';
+	eval( "sub scale(\$) { " . $options->{scale} . "*\$_[0] };" );
+    }
 
     return $self;
 }
@@ -66,8 +72,13 @@ sub parsefile {
     my ( $self, $file, $options ) = @_;
 
     open( my $fd, '<', $file ) or die("$file: $!\n");
-
     my $data = do { local $/; <$fd> };
+    $self->parsedata( $data, $options );
+}
+
+sub parsedata {
+    my ( $self, $data, $options ) = @_;
+
     # Extract URL.
     $data =~ s;^.*(irealb(?:ook)?://.*?)(?:$|\").*;$1;s;
     $data = "irealbook://" . $data
@@ -241,6 +252,11 @@ sub make_cells {
 
 	if ( $t =~ /^hspace\s+(\d+)$/ ) {
 	    $new_cell->() for 1..$1;
+	    next;
+	}
+
+	if ( $t eq "vspace" ) {
+	    $vspace++;
 	    next;
 	}
 
@@ -701,6 +717,11 @@ sub make_png {
 	$dy = 1.6*$musicsize;
     }
 
+    for ( $cell->vs ) {
+	next unless $_;
+	$y += $_*0.3*$dy;
+    }
+
     # TODO $im->setThickness( scale(1) );
 
     my $pages;
@@ -781,6 +802,7 @@ sub make_png {
 	$font ||= $chordfont;
 	$size ||= $chordsize;
 	$c =~ s/(?:\*m\*|-)/m/;
+	$c =~ s/^W/ /;
 	my $bass;
 	if ( $c =~ m;(.*?)/(.*); ) {
 	    $bass = $2;
@@ -837,6 +859,8 @@ sub make_png {
 	  if $song->{style};
     };
 
+    my $low;			# watermark to crop image
+
     # Process the cells.
     for ( my $i = 0; $i < @$cells; $i++ ) {
 
@@ -846,6 +870,7 @@ sub make_png {
 	if ( !$onpage ) {
 	    # First cell on this page, draw headings and such.
 	    $newpage->();
+	    $low = 0;
 	}
 
 	# The current cell.
@@ -854,6 +879,15 @@ sub make_png {
 	# Cell position on the drawing.
 	my $x = $lm +    ( $onpage % $numcols ) * $dx;
 	my $y = $tm + int( $onpage / $numcols ) * $dy;
+
+	for ( $cell->vs ) {
+	    next unless $_;
+	    $y += $_*0.3*$dy;
+	}
+
+	if ( $y + 40 > $low ) {
+	    $low = $y + 40;
+	}
 
 	for ( $cell->lbar ) {
 	    next unless $_;
@@ -917,6 +951,8 @@ sub make_png {
 
 	    my $font = $cell->sz ? $chrdfont : $chordfont;
 	    if ( $c =~ /^repeat(1Bar|2Bars)$/ ) {
+		#### TODO: Center repeat1Bar in measure.
+		#### TODO: Move repeat2Bar to overprint the next bar line.
 		$glyphl->( $x+0.15*$musicsize, $y-0.4*$musicsize, $c );
 		next;
 	    }
@@ -969,13 +1005,16 @@ sub make_png {
 	    my ( $disp, $t ) = @$_;
 	    $textl->( $x+0.15*$musicsize,
 		      $y+0.55*$musicsize-($disp/(40/$musicsize)),
-		      $t, 0.5*$musicsize, $textfont, , $red );
+		      $t, 0.5*$musicsize, $textfont, $red );
 	    next;
 	}
 
 	next;
     }
 
+    if ( $self->{crop} && $low ) {
+	$self->{im} = $im->crop( top => 0, height => scale($low) );
+    }
     $song->{pages} = $pages;
 }
 
