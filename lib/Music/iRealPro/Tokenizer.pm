@@ -95,9 +95,8 @@ sub tokenize {
 	}
 	elsif ( /^,/p ) {	# token separator
 	}
-	elsif ( /^Z/p ) {	# end of song
+	elsif ( /^Z/p ) {	# end of song or major section
 	    $d->( "end" );
-	    last;
 	}
 	elsif ( /^U/p ) {	# end repetition
 	    $d->( "stop" );
