@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Sun Jan 24 23:47:32 2016
-# Update Count    : 834
+# Last Modified On: Tue Jan 26 22:56:36 2016
+# Update Count    : 853
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -58,10 +58,12 @@ sub scale($) { 2*$_[0] };
 my $fonts =
   { titlefont => "FreeSansBold.ttf",
     textfont  => "FreeSans.ttf",
-    chordfont => "Myriad-CnSemibold.ttf",
-    chrdfont  => "Myriad-CnSemibold.ttf",
-    musicfont => "Bravura.otf",
     markfont  => "FreeSansBold.ttf",
+    # Normal and condensed versions
+    chordfont => "Myriad-CnSemibold.ttf",
+    chrdfont  => "Myriad-UcnSemibold.ttf",
+    musicfont => "Bravura.ttf",
+    muscfont  => "BravuraCn.ttf",
   };
 
 # Colors.
@@ -260,8 +262,7 @@ sub make_cells {
 
 	if ( $t eq "end" ) {
 	    $cells->[-2]->rbar = "barlineFinal";
-	    pop(@$cells);
-	    last;
+	    next;
 	}
 
 	if ( $t eq "end section" ) {
@@ -395,8 +396,6 @@ sub make_image {
     my $text;			# PDF::API2
 
     if ( $im ) {
-	require Imager::Matrix2d;
-
 	# Start with a white page.
 	$im->box( filled => 1 );
     }
@@ -407,30 +406,26 @@ sub make_image {
     my $chordfont = $fonts->{chordfont};
     my $chrdfont  = $fonts->{chrdfont};
     my $musicfont = $fonts->{musicfont};
-    my $muscfont  = $fonts->{musicfont};
+    my $muscfont  = $fonts->{muscfont};
     my $markfont  = $fonts->{markfont};
 
     # Make font objects.
+    my $i = 0;
     for ( $titlefont, $textfont, $chordfont, $chrdfont,
 	  $musicfont, $muscfont, $markfont ) {
+	$i++;
 	if ( $im ) {
 	    $_ = Imager::Font->new( file => $self->{fontdir} . $_ )
-	      or die( Imager->errstr );
+	      or die( "$i: ", Imager->errstr );
 	}
 	if ( $pdf ) {
 	    $_ = $pdf->ttfont( $self->{fontdir} . $_ );
 	}
     }
 
-    if ( $im ) {
-	# Condensed font for 'small' mode.
-	$chrdfont->transform
-	  ( matrix => Imager::Matrix2d->scale( x => 0.7, y => 1 ) );
-    }
-
-    my $chordsize = 20;
-    my $musicsize = $chordsize;
-
+    my $musicsize = 20;
+    my $chordsize = $musicsize;
+    my $titlesize = $musicsize;
     my $musicglyphs = \%smufl;
 
     my $lm = 40;
@@ -545,8 +540,8 @@ sub make_image {
 	    }
 	    elsif ( $c[0] eq "#" ) {
 		shift(@c);
-		$textl->( $x, $y-0.7*$size, $musicglyphs->{sharp},
-			   0.8*$size, $muscfont );
+		$textl->( $x+$one, $y-0.7*$size, $musicglyphs->{sharp},
+			   1*$size, $muscfont );
 	    }
 	}
 
@@ -602,12 +597,12 @@ sub make_image {
 
 	my $ddx = 0.15*$musicsize;
 	$textc->( ($lm+$rm)/2-$ddx, $tm-80, $song->{title},
-		  20, $titlefont );
+		  $titlesize, $titlefont );
 	$textl->( $lm-$ddx, $tm-50, $song->{composer},
-		  17, $textfont )
+		  0.85*$titlesize, $textfont )
 	  if $song->{composer};
 	$textr->( $rm+$ddx, $tm-50, "(".$song->{style}.")",
-		  17, $textfont )
+		  0.85*$titlesize, $textfont )
 	  if $song->{style};
     };
 
@@ -668,7 +663,8 @@ sub make_image {
 	for ( $cell->time ) {
 	    next unless $_;
 	    my ( $t1, $t2 ) = @$_;
-	    my $w = $aw->( $musicfont, 14, $musicglyphs->{timeSig0} ) / 2;
+	    my $w = $aw->( $musicfont, 0.7*$musicsize,
+			   $musicglyphs->{timeSig0} ) / 2;
 	    # Move left half $w for centering, and half $w to get
 	    # out of the way.
 	    my $x = $x - $w - 0.15*$musicsize;
@@ -697,38 +693,19 @@ sub make_image {
 	for ( $cell->chord ) {	# chords and chordrepeats.
 	    next unless $_;
 	    my $c = $_;
-
-	    #### TODO: Refactor
-	    if ( $im ) {
-		my $font = $cell->sz ? $chrdfont : $chordfont;
-		if ( $c =~ /^repeat(1Bar|2Bars)$/ ) {
-		    #### TODO: Center repeat1Bar in measure.
-		    #### TODO: Move repeat2Bar to overprint the next bar line.
-		    $glyphl->( $x+0.15*$musicsize, $y-0.4*$musicsize, $c );
-		    next;
-		}
-		if ( $c =~ /^repeat(Slash)$/ ) {
-		    $textl->( $x+0.4*$musicsize, $y, "/", $chordsize, $font );
-		    next;
-		}
-
-		$chord->( $x+0.15*$musicsize, $y, $c, $chordsize, $font );
+	    my $font = $cell->sz ? $chrdfont : $chordfont;
+	    if ( $c =~ /^repeat(1Bar|2Bars)$/ ) {
+		#### TODO: Center repeat1Bar in measure.
+		#### TODO: Move repeat2Bar to overprint the next bar line.
+		$textl->( $x+0.15*$musicsize, ($y-0.3*$musicsize),
+			  $musicglyphs->{$c}, $chordsize, $musicfont );
+		next;
 	    }
-
-	    if ( $pdf ) {
-		my $chordsize = $cell->sz ? 14 : 20;
-		if ( $c =~ /^repeat(1Bar|2Bars)$/ ) {
-		    $textl->( $x+0.15*$musicsize, ($y-0.4*$musicsize),
-			      $musicglyphs->{$c}, $chordsize, $musicfont );
-		    next;
-		}
-		if ( $c =~ /^repeat(Slash)$/ ) {
-		    $textl->( $x+0.4*$musicsize, $y, "/", $chordsize, $chordfont );
-		    next;
-		}
-
-		$chord->( $x+0.15*$musicsize, $y, $_ );
+	    if ( $c =~ /^repeat(Slash)$/ ) {
+		$textl->( $x+0.4*$musicsize, $y, "/", $chordsize, $chordfont );
+		next;
 	    }
+	    $chord->( $x+0.15*$musicsize, $y, $_ );
 	    next;
 	}
 
@@ -783,9 +760,8 @@ sub make_image {
 	for ( $cell->text ) {
 	    next unless $_;
 	    my ( $disp, $t ) = @$_;
-	    $disp = -$disp if $im; # WHY???
 	    $textl->( $x+0.15*$musicsize,
-		      $y+0.55*$musicsize+($disp/(40/$musicsize)),
+		      $y+0.55*$musicsize-($disp/(40/$musicsize)),
 		      $t, 0.5*$musicsize, $textfont, $red );
 	    next;
 	}

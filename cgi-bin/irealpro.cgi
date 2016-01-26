@@ -3,8 +3,8 @@
 # Author          : Johan Vromans
 # Created On      : Tue Mar  3 11:09:45 2015
 # Last Modified By: Johan Vromans
-# Last Modified On: Thu Jan 21 14:05:05 2016
-# Update Count    : 310
+# Last Modified On: Tue Jan 26 23:05:52 2016
+# Update Count    : 312
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -18,14 +18,14 @@ use lib "/home/jv/lib/perl5";
 use lib "/home/jv/src/Music-iRealPro/lib";
 
 chdir("/home/jv/src/Music-iRealPro/cgi-bin");
-$ENV{FONTDIR} = "fonts";
+$ENV{FONTDIR} = "../fonts";
 
 use Template::Tiny;
 use Music::iRealPro::URI;
 use Music::iRealPro::PDF;
 
 my $my_package = "Sciurix";
-my ($my_name, $my_version) = qw( iRealPro 0.01 );
+my ($my_name, $my_version) = qw( iRealPro 0.02 );
 
 print "Content-Type: text/html\n\n";
 
