@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Thu Jan 28 15:07:46 2016
-# Update Count    : 926
+# Last Modified On: Thu Jan 28 15:26:49 2016
+# Update Count    : 934
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -643,8 +643,18 @@ sub make_image {
 # String width.
 sub aw {
     my ( $self, $font, $size, $t ) = @_;
-    return ($font->bounding_box( size => $size, string => $t ))[6]
-      if $self->{im};
+    if ( $self->{im} ) {
+	my @w = $font->bounding_box( size => $size, string => $t );
+	# ($neg_width,
+	#  $global_descent,
+	#  $pos_width,
+	#  $global_ascent,
+	#  $descent,
+	#  $ascent,
+	#  $advance_width,
+	#  $right_bearing)
+	return $w[6];
+    }
     if ( $self->{pdf} ) {
 	$self->{text}->font( $font, $size );
 	return $self->{text}->advancewidth($t);
@@ -789,6 +799,7 @@ sub chord {
     $self->chord( $x-$one, $y, $bass, 0.6*$size, $font );
 }
 
+# Draw a line.
 sub line {
     my ( $self, $x1, $y1, $x2, $y2, $col ) = @_;
     $col ||= $black;
