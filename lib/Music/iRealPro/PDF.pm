@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Tue Jan 26 22:56:36 2016
-# Update Count    : 853
+# Last Modified On: Thu Jan 28 10:18:28 2016
+# Update Count    : 885
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -221,7 +221,7 @@ sub make_cells {
     };
 
     my $new_measure = sub {
-	$cells->[-2]->rbar ||= "barlineSingle";
+	@$cells >= 2 and $cells->[-2]->rbar ||= "barlineSingle";
 	$cells->[-1]->lbar ||= "barlineSingle";
     };
 
@@ -241,7 +241,6 @@ sub make_cells {
 
 	if ( $t eq "end repeat" ) {
 	    $cells->[-2]->rbar = "repeatRight";
-	    # TODO $new_cell->() if $x >= $rm;
 	    next;
 	}
 
@@ -255,8 +254,10 @@ sub make_cells {
 	    next;
 	}
 
+	# |Bh7 E7b9 ZY|QA- |
 	if ( $t eq "vspace" ) {
 	    $vspace++;
+	    $cells->[-1]->vs = $vspace;
 	    next;
 	}
 
@@ -519,7 +520,7 @@ sub make_image {
 	my ( $x, $y, $c, $size, $font ) = @_;
 	$font ||= $chordfont;
 	$size ||= $chordsize;
-	$c =~ s/(?:\*m\*|-)/m/;
+	$c =~ s/(?:\*m(\d)?\*|-)/m$1/;
 	$c =~ s/^W/ /;
 	my $bass;
 	if ( $c =~ m;(.*?)/(.*); ) {
@@ -528,6 +529,7 @@ sub make_image {
 	}
 
 	my $one = 0.05*$size;
+	$y += $one;
 
 	my @c = split ( /([miaugdb#^oh\d])/, $c );
 	$x += $textl->( $x, $y, shift(@c), 1.2*$size, $font );
@@ -535,13 +537,13 @@ sub make_image {
 	if ( @c ) {
 	    if ( $c[0] eq "b" ) {
 		shift(@c);
-		$textl->( $x, $y-0.6*$size, $musicglyphs->{flat},
-			  $size, $muscfont );
+		$textl->( $x+$one, $y-0.6*$size, $musicglyphs->{flat},
+			  $size, $musicfont );
 	    }
 	    elsif ( $c[0] eq "#" ) {
 		shift(@c);
 		$textl->( $x+$one, $y-0.7*$size, $musicglyphs->{sharp},
-			   1*$size, $muscfont );
+			   1*$size, $musicfont );
 	    }
 	}
 
@@ -583,7 +585,7 @@ sub make_image {
 	$textl->( $x, $y, "/", 0.9*$size, $font );
 	$x += $w;
 	$y += 0.2*$size;
-	$chord->( $x-0.15*$size, $y, $bass, 0.6*$size, $font );
+	$chord->( $x-$one, $y, $bass, 0.6*$size, $font );
     };
 
     # Draw headings for a new page.
@@ -694,17 +696,51 @@ sub make_image {
 	    next unless $_;
 	    my $c = $_;
 	    my $font = $cell->sz ? $chrdfont : $chordfont;
-	    if ( $c =~ /^repeat(1Bar|2Bars)$/ ) {
-		#### TODO: Center repeat1Bar in measure.
-		#### TODO: Move repeat2Bar to overprint the next bar line.
-		$textl->( $x+0.15*$musicsize, ($y-0.3*$musicsize),
+
+	    if ( $c =~ /^repeat1Bar$/ ) {
+
+		# Find previous bar line.
+		my $pb = $i;
+		while ( $pb >= 0) {
+		    last if $cells->[$pb]->lbar
+		      || ( $pb > 1 && $cells->[$pb-1]->rbar );
+		    $pb--;
+		}
+		# Find next bar line.
+		my $nb = $i;
+		while ( $nb < @$cells ) {
+		    last if $cells->[$nb]->rbar
+		      || ( $nb+1 < @$cells && $cells->[$nb+1]->lbar );
+		    $nb++;
+		}
+		$x -= ( $i-$pb ) * $dx;
+		$x += ( $nb-$pb+1 ) * $dx/2;
+
+		$textc->( $x, ($y-0.3*$musicsize),
 			  $musicglyphs->{$c}, $chordsize, $musicfont );
 		next;
 	    }
+
+	    if ( $c =~ /^repeat2Bars$/ ) {
+
+		# Find next bar line.
+		my $nb = $i;
+		while ( $nb < @$cells ) {
+		    last if $cells->[$nb]->rbar
+		      || ( $nb+1 < @$cells && $cells->[$nb+1]->lbar );
+		    $nb++;
+		}
+		$x += ( $nb-$i+1 ) * $dx;
+		$textc->( $x, ($y-0.3*$musicsize),
+			  $musicglyphs->{$c}, $chordsize, $musicfont );
+		next;
+	    }
+
 	    if ( $c =~ /^repeat(Slash)$/ ) {
 		$textl->( $x+0.4*$musicsize, $y, "/", $chordsize, $chordfont );
 		next;
 	    }
+
 	    $chord->( $x+0.15*$musicsize, $y, $_ );
 	    next;
 	}
