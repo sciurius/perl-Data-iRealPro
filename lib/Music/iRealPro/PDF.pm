@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Thu Jan 28 15:26:49 2016
-# Update Count    : 934
+# Last Modified On: Sun Jan 31 21:25:45 2016
+# Update Count    : 941
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -582,7 +582,7 @@ sub make_image {
 
 	for ( $cell->subchord ) {
 	    next unless $_;
-	    $self->chord( $x+0.15*$musicsize, $y+$musicsize,
+	    $self->chord( $x+0.15*$musicsize, $y-$musicsize,
 			  $_, 0.7*$chordsize );
 	    next;
 	}
@@ -637,6 +637,100 @@ sub make_image {
 
     # }}}
 }
+
+# Draw a chord, with potentially a bass note.
+sub chord {
+    my ( $self, $x, $y, $c, $size, $font ) = @_;
+    $font ||= $self->{chordfont};
+    $size ||= $self->{chordsize};
+    $c =~ s/\*(.*?)\*/$1/;
+    $c =~ s/-/m/;
+    my $bass;
+    if ( $c =~ m;(.*?)/(.*); ) {
+	$bass = $2;
+	$c = $1;
+    }
+
+    my $one = 0.05*$size;
+    $y += $one;
+
+    my @c = split ( //, $c );
+    my $root = shift(@c);
+    $root = " " if $root eq "W";
+    $root .= shift(@c) if $root eq "N" and $c[0] eq "C";
+    $x += $self->textl( $x, $y, $root, 1.2*$size, $font );
+
+    if ( @c ) {
+	if ( $c[0] eq "b" ) {
+	    shift(@c);
+	    $self->textl( $x+$one, $y-0.6*$size,
+			  $self->{musicglyphs}->{flat},
+			  $size, $self->{musicfont} );
+	}
+	elsif ( $c[0] eq "#" ) {
+	    shift(@c);
+	    $self->textl( $x+$one, $y-0.7*$size,
+			  $self->{musicglyphs}->{sharp},
+			  0.9*$size, $self->{musicfont} );
+	}
+    }
+
+    while ( @c ) {
+	my $c = shift(@c);
+	if ( $c eq "b" ) {
+	    $x += $self->glyphl( $x+$one, $y-0.15*$size, "flat", 0.8*$size );
+	}
+	elsif ( $c eq "#" ) {
+	    $x += $self->glyphl( $x, $y-0.15*$size, "sharp", 0.6*$size );
+	}
+	elsif ( $c =~ /\d/ ) {
+	    $x += $self->textl( $x, $y+0.1*$size, $c, 0.7*$size, $font );
+	}
+	elsif ( $c eq "^" ) {
+	    $x += $self->textl( $x, $y,
+			    $self->{musicglyphs}->{csymMajorSeventh},
+			    0.8*$size, $self->{muscfont} );
+	}
+	elsif ( $c eq "o" ) {
+	    $x += $self->textl( $x, $y,
+				    $self->{musicglyphs}->{csymDiminished},
+				    0.8*$size, $self->{muscfont} );
+	}
+	elsif ( $c eq "h" ) {
+	    $x += $self->textl( $x, $y,
+				    $self->{musicglyphs}->{csymHalfDiminished},
+				    0.8*$size, $self->{muscfont} );
+	}
+	else {
+	    $x += $self->textl( $x, $y+$one+$one, $c,
+				    0.7*$size, $self->{chrdfont} );
+	}
+    }
+    return unless $bass;
+    my $w = $self->aw( $font, 0.9*$size, "/");
+    $x -= $w/3;
+    $y += 0.3*$size;
+    $self->textl( $x, $y, "/", 0.9*$size, $font );
+    $x += $w;
+    $y += 0.2*$size;
+    $self->chord( $x-$one, $y, $bass, 0.6*$size, $font );
+}
+
+# New page.
+sub newpage {
+    my ( $self ) = @_;
+    $self->{pages}++;
+
+    if ( $self->{im} ) {
+	# Start with a white page.
+	$self->{im}->box( filled => 1 );
+    }
+
+    if ( $self->{pdf} ) {
+	$self->{page} = $self->{pdf}->page;
+	$self->{text} = $self->{page}->text;
+    }
+};
 
 ################ Low level graphics ################
 
@@ -723,82 +817,6 @@ sub glyphl {
 		  $self->{musicfont}, $col );
 };
 
-# Draw a chord, with potentially a bass note.
-sub chord {
-    my ( $self, $x, $y, $c, $size, $font ) = @_;
-    $font ||= $self->{chordfont};
-    $size ||= $self->{chordsize};
-    $c =~ s/\*(.*?)\*/$1/;
-    $c =~ s/-/m/;
-    $c =~ s/^W/ /;
-    my $bass;
-    if ( $c =~ m;(.*?)/(.*); ) {
-	$bass = $2;
-	$c = $1;
-    }
-
-    my $one = 0.05*$size;
-    $y += $one;
-
-    my @c = split ( //, $c );
-    $x += $self->textl( $x, $y, shift(@c), 1.2*$size, $font );
-
-    if ( @c ) {
-	if ( $c[0] eq "b" ) {
-	    shift(@c);
-	    $self->textl( $x+$one, $y-0.6*$size,
-			  $self->{musicglyphs}->{flat},
-			  $size, $self->{musicfont} );
-	}
-	elsif ( $c[0] eq "#" ) {
-	    shift(@c);
-	    $self->textl( $x+$one, $y-0.7*$size,
-			  $self->{musicglyphs}->{sharp},
-			  1*$size, $self->{musicfont} );
-	}
-    }
-
-    while ( @c ) {
-	my $c = shift(@c);
-	if ( $c eq "b" ) {
-	    $x += $self->glyphl( $x+$one, $y-0.15*$size, "flat", 0.8*$size );
-	}
-	elsif ( $c eq "#" ) {
-	    $x += $self->glyphl( $x, $y-0.15*$size, "sharp", 0.6*$size );
-	}
-	elsif ( $c =~ /\d/ ) {
-	    $x += $self->textl( $x, $y+0.1*$size, $c, 0.7*$size, $font );
-	}
-	elsif ( $c eq "^" ) {
-	    $x += $self->textl( $x, $y,
-			    $self->{musicglyphs}->{csymMajorSeventh},
-			    0.8*$size, $self->{muscfont} );
-	}
-	elsif ( $c eq "o" ) {
-	    $x += $self->textl( $x, $y,
-				    $self->{musicglyphs}->{csymDiminished},
-				    0.8*$size, $self->{muscfont} );
-	}
-	elsif ( $c eq "h" ) {
-	    $x += $self->textl( $x, $y,
-				    $self->{musicglyphs}->{csymHalfDiminished},
-				    0.8*$size, $self->{muscfont} );
-	}
-	else {
-	    $x += $self->textl( $x, $y+$one+$one, $c,
-				    0.7*$size, $self->{chrdfont} );
-	}
-    }
-    return unless $bass;
-    my $w = $self->aw( $font, 0.9*$size, "/");
-    $x -= $w/3;
-    $y += 0.3*$size;
-    $self->textl( $x, $y, "/", 0.9*$size, $font );
-    $x += $w;
-    $y += 0.2*$size;
-    $self->chord( $x-$one, $y, $bass, 0.6*$size, $font );
-}
-
 # Draw a line.
 sub line {
     my ( $self, $x1, $y1, $x2, $y2, $col ) = @_;
@@ -822,22 +840,7 @@ sub line {
     }
 }
 
-# New page.
-sub newpage {
-    my ( $self ) = @_;
-    $self->{pages}++;
-
-    if ( $self->{im} ) {
-	# Start with a white page.
-	$self->{im}->box( filled => 1 );
-    }
-
-    if ( $self->{pdf} ) {
-	$self->{page} = $self->{pdf}->page;
-	$self->{text} = $self->{page}->text;
-    }
-};
-
+# Setup fonts.
 sub initfonts {
     my ( $self, $size ) = @_;
     $size ||= 20;
