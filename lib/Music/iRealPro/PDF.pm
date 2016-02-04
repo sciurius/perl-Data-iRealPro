@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Thu Feb  4 14:56:58 2016
-# Update Count    : 946
+# Last Modified On: Thu Feb  4 15:35:45 2016
+# Update Count    : 947
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -662,8 +662,13 @@ sub chord {
     my @c = split ( //, $c );
     my $root = shift(@c);
     $root = " " if $root eq "W";
-    $root .= shift(@c) if $root eq "N" and $c[0] eq "C";
-    $x += $self->textl( $x, $y, $root, 1.2*$size, $font );
+    if ( $root eq "N" and $c[0] eq "C" ) {
+	shift(@c);
+	$x += $self->textl( $x, $y, "N.C.", $size, $self->{chrdfont} );
+    }
+    else {
+	$x += $self->textl( $x, $y, $root, 1.2*$size, $font );
+    }
 
     if ( @c ) {
 	if ( $c[0] eq "b" ) {
