@@ -3,8 +3,8 @@
 # Author          : Johan Vromans
 # Created On      : Tue Mar  3 11:09:45 2015
 # Last Modified By: Johan Vromans
-# Last Modified On: Tue Jan 26 23:05:52 2016
-# Update Count    : 312
+# Last Modified On: Thu Feb  4 09:51:54 2016
+# Update Count    : 313
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -112,6 +112,10 @@ foreach my $s ( @{ $u->{playlist}->{songs} } ) {
 		    ? ( "; tempo: ", $s->{actual_tempo} ) : (),
 		    $s->{actual_repeats} && $s->{actual_repeats} > 1
 		    ? ( "; repeat: ", $s->{actual_repeats} ) : (),
+		    $s->{a2}
+		    ? ( "; a2: ", $s->{a2} ) : (),
+		    $s->{a5}
+		    ? ( "; a5: ", $s->{a5} ) : (),
 		  ),
 	    cooked => $s->{data},
 	    rows => 10,
