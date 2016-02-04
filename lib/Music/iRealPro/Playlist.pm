@@ -58,7 +58,8 @@ sub parse {
 sub export {
     my ( $self, %args ) = @_;
 
-    my $dashes = $self->{variant} eq "irealbook" ? "=" : "===";
+    my $v = $args{variant} || $self->{variant};
+    my $dashes = $v eq "irealbook" ? "=" : "===";
 
     my $r = join( $dashes,
 		  map { $_->export( %args ) } @{ $self->{songs} } );
