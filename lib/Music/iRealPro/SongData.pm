@@ -32,7 +32,7 @@ sub parse {
 	$self->{a2}		 = shift(@a); # ??
 	$self->{style}		 = shift(@a);
 	$self->{key}		 = shift(@a);
-	$self->{a5}		 = shift(@a); # ??
+	$self->{transpose}	 = shift(@a);
 	$self->{raw}		 = shift(@a);
 	$self->{actual_style}	 = shift(@a);
 	$self->{actual_tempo}	 = shift(@a);
@@ -95,7 +95,7 @@ sub export {
 		 $self->{a2} || '',
 		 $self->{style},
 		 $self->{key},
-		 $self->{a5} || '',
+		 $self->{transpose} || '',
 		 obfuscate( $self->{data} ),
 		 $self->{actual_style} || '',
 		 $self->{actual_tempo} || 0,
