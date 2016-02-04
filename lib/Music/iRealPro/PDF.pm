@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Sun Jan 31 21:25:45 2016
-# Update Count    : 941
+# Last Modified On: Thu Feb  4 14:56:58 2016
+# Update Count    : 946
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -89,7 +89,7 @@ sub parsedata {
     my $u = Music::iRealPro::URI->new( data => $data,
 				       debug => $self->{debug} );
     my $plname = $u->{playlist}->{name};
-    if ( $plname ) {
+    if ( $plname && @{ $u->{playlist}->{songs} } > 1 ) {
 	if ( $self->{output} && $self->{output} !~ /\.pdf$/i ) {
 	    die("Can only generate PDF for playlist\n");
 	}
@@ -426,12 +426,17 @@ sub make_image {
 	my $titlefont = $self->{titlefont};
 	my $ddx = 0.15*$musicsize;
 
+	# If the composer is two words, assume lastname firstname.
+	# iRealPro swaps them.
+	my @t = split( ' ', $song->{composer} );
+	@t[0,1] = @t[1,0] if @t == 2;
+
 	$self->textc( ($lm+$rm)/2-$ddx, $tm-80, $song->{title},
 		      $titlesize, $titlefont );
-	$self->textl( $lm-$ddx, $tm-50, $song->{composer},
+	$self->textl( $lm-$ddx, $tm-50, "(".$song->{style}.")",
 		      0.85*$titlesize, $textfont )
 	  if $song->{composer};
-	$self->textr( $rm+$ddx, $tm-50, "(".$song->{style}.")",
+	$self->textr( $rm+$ddx, $tm-50, "@t",
 		      0.85*$titlesize, $textfont )
 	  if $song->{style};
     };
