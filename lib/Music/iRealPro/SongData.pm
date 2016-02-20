@@ -15,6 +15,14 @@ sub new {
     return $self;
 }
 
+sub actual_key {
+    my ( $self, $n ) = @_;
+    # Actual key as shown. Fixed range, only flats, no minor.
+    my $keys = [ qw( C Db D Eb E F Gb G Ab A Bb B ) ];
+    wantarray && !defined($n) && return @$keys;
+    $keys->[$n % 12];
+}
+
 sub parse {
     my ( $self, $data ) = @_;
 
@@ -31,8 +39,8 @@ sub parse {
 	$self->{composer}	 = shift(@a);
 	$self->{a2}		 = shift(@a); # ??
 	$self->{style}		 = shift(@a);
-	$self->{key}		 = shift(@a);
-	$self->{transpose}	 = shift(@a);
+	$self->{key}		 = shift(@a); # C ...
+	$self->{actual_key}	 = shift(@a); # 0 ...
 	$self->{raw}		 = shift(@a);
 	$self->{actual_style}	 = shift(@a);
 	$self->{actual_tempo}	 = shift(@a);
@@ -95,7 +103,7 @@ sub export {
 		 $self->{a2} || '',
 		 $self->{style},
 		 $self->{key},
-		 $self->{transpose} || '',
+		 $self->{actual_key} || '',
 		 obfuscate( $self->{data} ),
 		 $self->{actual_style} || '',
 		 $self->{actual_tempo} || 0,
