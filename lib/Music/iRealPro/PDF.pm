@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Thu Feb  4 15:35:45 2016
-# Update Count    : 947
+# Last Modified On: Sun Mar 13 23:26:43 2016
+# Update Count    : 951
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -140,6 +140,8 @@ sub parsedata {
 
     # Process the song(s).
     foreach my $song ( @{ $u->{playlist}->{songs} } ) {
+	warn("SONG: ", $song->{title}, "\n")
+	  if $self->{verbose};
 	my $res = $self->decode_song($song->{data});
 	my $mx = $self->make_cells( $song, $res );
 
@@ -197,6 +199,7 @@ sub decode_song {
 use Data::Struct;
 
 my @fields = qw( vs sz chord subchord text mark sign time lbar rbar alt );
+struct Cell => @fields;
 
 sub make_cells {
     # {{{
@@ -207,7 +210,6 @@ sub make_cells {
 	warn(Dumper($tokens));
     }
 
-    struct Cell => @fields;
     my $cells = [];
     my $cell;
     my $chordsize = 0;		# normal
@@ -344,8 +346,10 @@ sub make_cells {
 	next;
 
     }
-    warn Dumper($cells);
-    warn('$DATA = "', $song->{data}, "\";\n");
+    if ( $self->{debug} ) {
+	warn Dumper($cells);
+	warn('$DATA = "', $song->{data}, "\";\n");
+    }
     return $cells;
     # }}}
 }
