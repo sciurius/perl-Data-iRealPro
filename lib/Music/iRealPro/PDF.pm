@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Sun Mar 13 23:26:43 2016
-# Update Count    : 951
+# Last Modified On: Fri Apr  8 21:29:25 2016
+# Update Count    : 960
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -18,12 +18,12 @@ use utf8;
 
 package Music::iRealPro::PDF;
 
-our $VERSION = "0.03";
+our $VERSION = "0.04";
 
 use Music::iRealPro::URI;
 use Music::iRealPro::Tokenizer;
 use Data::Dumper;
-use Text::CSV;
+use Text::CSV_XS;
 
 sub new {
     my ( $pkg, $options ) = @_;
@@ -34,10 +34,12 @@ sub new {
 	$self->{$_} = $options->{$_} if exists $options->{$_};
     }
 
-    $self->{fontdir} ||= $ENV{FONTDIR} || ".";
+    $self->{fontdir} = $ENV{FONTDIR};
+    $self->{fontdir} ||= Cava::Packager::GetResourcePath() . "/fonts"
+      if $Cava::Packager::PACKAGED;
+    $self->{fontdir} ||= ".";
     $self->{fontdir} .= "/";
     $self->{fontdir} =~ s;/+$;/;;
-
     # Scaling (bitmaps only).
     if ( $options->{scale} && $options->{scale} =~ /^[\d.]+$/ ) {
 	no warnings 'redefine';
@@ -103,13 +105,11 @@ sub parsedata {
 
     ( my $outtype = lc($self->{output}) ) =~ s/^.*\.(.+)$/$1/;
 
-    if ( $outtype eq "pdf" ) {
-	require PDF::API2;
+    if ( $outtype eq "pdf" && eval { require PDF::API2 } ) {
 	$self->{pdf} = PDF::API2->new;
 	$self->{pdf}->mediabox( 0, PAGE_HEIGHT, PAGE_WIDTH, 0 );
     }
-    elsif ( $outtype =~ /^png|jpg$/ ) {
-	require Imager;
+    elsif ( $outtype =~ /^png|jpg$/ && eval { require Imager } ) {
 	$self->{im} = Imager->new( xsize => scale(PAGE_WIDTH),
 				   ysize => scale(PAGE_HEIGHT),
 				   model => 'rgb',
@@ -129,9 +129,9 @@ sub parsedata {
 	$csv_name = $self->{output};
 	$csv_name =~ s/\.pdf$/.csv/i;
 	open( $csv_fd, ">:encoding(utf8)", $csv_name );
-	$csv = Text::CSV->new( { binary => 1,
-				 quote_space => 0,
-				 sep_char => ";" } );
+	$csv = Text::CSV_XS->new( { binary => 1,
+				    quote_space => 0,
+				    sep_char => ";" } );
 	$csv->print( $csv_fd,
 		     [ qw( title pages keys composers
 			   collections ), "source types" ] );
@@ -862,12 +862,13 @@ sub initfonts {
     # Make font objects.
     for ( qw( titlefont textfont chordfont chrdfont
 	      musicfont muscfont markfont ) ) {
+	my $ff = $self->{fontdir} . $fonts->{$_};
 	if ( $self->{im} ) {
-	    $self->{$_} = Imager::Font->new( file => $self->{fontdir} . $fonts->{$_} )
+	    $self->{$_} = Imager::Font->new( file => $ff )
 	      or die( "$_: ", Imager->errstr );
 	}
 	if ( $self->{pdf} ) {
-	    $self->{$_} = $self->{pdf}->ttfont( $self->{fontdir} . $fonts->{$_} );
+	    $self->{$_} = $self->{pdf}->ttfont( $ff );
 	}
     }
 
