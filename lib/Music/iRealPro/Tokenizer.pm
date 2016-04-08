@@ -122,7 +122,7 @@ sub tokenize {
 	elsif ( /^\<(?:\*(\d\d))?(.*?)\>/p ) { # text
 	    $d->( "text " . ( $1 || 0 ) . " " . $2 );
 	}
-	elsif ( /^(.)/p ) {
+	elsif ( /^(.)/ps ) {
 	    $d->( "ignore $1" );
 	    warn( "Unhandled token: " . ${^MATCH} . "\n" );
 	}
