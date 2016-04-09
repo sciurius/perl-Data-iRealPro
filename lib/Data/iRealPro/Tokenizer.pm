@@ -5,7 +5,7 @@ use strict;
 use warnings;
 use Carp;
 
-package Music::iRealPro::Tokenizer;
+package Data::iRealPro::Tokenizer;
 
 our $VERSION = "0.10";
 

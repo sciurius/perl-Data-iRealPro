@@ -16,12 +16,12 @@ use warnings;
 use Carp;
 use utf8;
 
-package Music::iRealPro::PDF;
+package Data::iRealPro::Imager;
 
 our $VERSION = "0.04";
 
-use Music::iRealPro::URI;
-use Music::iRealPro::Tokenizer;
+use Data::iRealPro::URI;
+use Data::iRealPro::Tokenizer;
 use Data::Dumper;
 use Text::CSV_XS;
 
@@ -88,7 +88,7 @@ sub parsedata {
     $data = "irealbook://" . $data
       unless $data =~ m;^(irealb(?:ook)?://.*?);;
 
-    my $u = Music::iRealPro::URI->new( data => $data,
+    my $u = Data::iRealPro::URI->new( data => $data,
 				       debug => $self->{debug} );
     my $plname = $u->{playlist}->{name};
     if ( $plname && @{ $u->{playlist}->{songs} } > 1 ) {
@@ -188,7 +188,7 @@ sub decode_song {
 
     # Build the tokens array. This reflects as precisely as possible
     # the contents of the pure data string.
-    my $tokens = Music::iRealPro::Tokenizer->new
+    my $tokens = Data::iRealPro::Tokenizer->new
       ( debug   => $self->{debug},
 	variant => $self->{variant},
       )->tokenize($str);

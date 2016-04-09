@@ -3,8 +3,8 @@
 # Author          : Johan Vromans
 # Created On      : Tue Mar  3 11:09:45 2015
 # Last Modified By: Johan Vromans
-# Last Modified On: Thu Feb  4 16:45:58 2016
-# Update Count    : 319
+# Last Modified On: Sat Apr  9 21:45:04 2016
+# Update Count    : 321
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -14,19 +14,19 @@ use utf8;
 use CGI qw( -debug );
 use CGI::Carp qw(fatalsToBrowser);
 
-use lib "/home/jv/lib/perl5";
+use lib "/home/jv/src/Music-iRealPro/CPAN";
 use lib "/home/jv/src/Music-iRealPro/lib";
 
 chdir("/home/jv/src/Music-iRealPro/cgi-bin");
 $ENV{FONTDIR} = "../fonts";
 
 use Template::Tiny;
-use Music::iRealPro::URI;
-use Music::iRealPro::SongData;
-use Music::iRealPro::PDF;
+use Data::iRealPro::URI;
+use Data::iRealPro::SongData;
+use Data::iRealPro::Imager;
 
 my $my_package = "Sciurix";
-my ($my_name, $my_version) = qw( iRealPro 0.02 );
+my ($my_name, $my_version) = qw( iRealPro/Web 0.04 );
 
 print "Content-Type: text/html\n\n";
 
@@ -54,7 +54,7 @@ unless ( $uri ) {
 
 ################ Main ################
 
-my $u = Music::iRealPro::URI->new( data => $uri );
+my $u = Data::iRealPro::URI->new( data => $uri );
 
 my $v = $u->{variant};
 $v =~ s/^(.)(....)(.*)/$1.ucfirst($2).ucfirst($3)/e;
@@ -94,7 +94,7 @@ foreach my $s ( @{ $u->{playlist}->{songs} } ) {
 
     my $image = "tmp/ir$$.png";
     my $options = { output => $image, scale => 1.4, crop => 1 };
-    Music::iRealPro::PDF->new($options)->parsedata( $uri, $options );
+    Data::iRealPro::Imager->new($options)->parsedata( $uri, $options );
 
     push( @songs,
 	  { index => $song,
@@ -116,7 +116,7 @@ foreach my $s ( @{ $u->{playlist}->{songs} } ) {
 		    $s->{a2}
 		    ? ( "; a2: ", $s->{a2} ) : (),
 		    $s->{actual_key}
-		    ? ( "; actual key: ", Music::iRealPro::SongData->actual_key($s->{actual_key}) ) : (),
+		    ? ( "; actual key: ", Data::iRealPro::SongData->actual_key($s->{actual_key}) ) : (),
 		  ),
 	    cooked => $s->{data},
 	    rows => 10,

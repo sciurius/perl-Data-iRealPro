@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Carp;
 
-package Music::iRealPro::SongData;
+package Data::iRealPro::SongData;
 
 our $VERSION = "0.01";
 

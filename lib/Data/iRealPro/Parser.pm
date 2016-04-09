@@ -5,12 +5,12 @@ use warnings;
 use Carp;
 use utf8;
 
-package Music::iRealPro::Parser;
+package Data::iRealPro::Parser;
 
 our $VERSION = "0.01";
 
-use Music::iRealPro::URI;
-use Music::iRealPro::Tokenizer;
+use Data::iRealPro::URI;
+use Data::iRealPro::Tokenizer;
 use Data::Dumper;
 
 sub new {
@@ -21,7 +21,7 @@ sub new {
 sub decode_playlist {		# or single song
     my ( $self, $url ) = @_;
 
-    my $u = Music::iRealPro::URI->new( data => $url,
+    my $u = Data::iRealPro::URI->new( data => $url,
 				       debug => $self->{debug} );
     if ( $u->{playlist}->{name} ) {
 	warn( "PLAYLIST: ", $u->{playlist}->{name},
@@ -40,7 +40,7 @@ sub decode_song {
 
     # Build the tokens array. This reflects as precisely as possible
     # the contents of the pure data string.
-    my $tokens = Music::iRealPro::Tokenizer->new
+    my $tokens = Data::iRealPro::Tokenizer->new
       ( debug   => $self->{debug},
 	variant => $self->{variant},
       )->tokenize($str);
@@ -189,7 +189,7 @@ SLOOP:
   subtitle = "@{[ $song->{style} ]}"
   composer = "@{[ $song->{composer} ]}"
   tagline = \\markup {
-    \\tiny "Converted from iRealBook by App::Music::iRealPro $VERSION"
+    \\tiny "Converted from iRealBook by App::Data::iRealPro $VERSION"
   }
 }
 
@@ -480,7 +480,7 @@ sub timesig {
 package main;
 
 unless ( caller ) {
-    my $d = Music::iRealPro::Parser->new( debug => 1 );
+    my $d = Data::iRealPro::Parser->new( debug => 1 );
     my $data = do { local $/; <> };
     # Extract URL.
     $data =~ s;^.*(irealb(?:ook)?://.*?)(?:$|\").*;$1;s;

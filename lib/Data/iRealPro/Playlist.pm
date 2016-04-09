@@ -4,11 +4,11 @@ use strict;
 use warnings;
 use Carp;
 
-package Music::iRealPro::Playlist;
+package Data::iRealPro::Playlist;
 
 our $VERSION = "0.01";
 
-use Music::iRealPro::SongData;
+use Data::iRealPro::SongData;
 
 sub new {
     my ( $pkg, %args ) = @_;
@@ -46,7 +46,7 @@ sub parse {
     # Process the song(s).
     foreach ( @a ) {
 	push( @{ $self->{songs} },
-	      Music::iRealPro::SongData->new( variant => $self->{variant},
+	      Data::iRealPro::SongData->new( variant => $self->{variant},
 					      data    => $_,
 					      debug   => $self->{debug},
 					    ) );

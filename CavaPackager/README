@@ -1,0 +1,37 @@
+Cava Packager project settings for iRealPro.
+
+* iRealPro
+  - Project Details
+    Name: iRealPro
+  - Build Options
+    Masked / Virtual
+    Top Level: iRealPro
+  - Perl Interpreter
+    /bulk/perlbrew/perls/citrus-5.16.3-wx-2.8/bin/perl
+    Module paths: ${ROOT}/CPAN ${ROOT}/lib
+  
+** Executables
+*** iReal2Pdf
+**** Executable
+     Console Executable
+
+** Scripts
+*** ${ROOT}/bin/iReal2pdf
+    Masked Perl Code / Virtual Script Path
+
+** Force Include Modules
+   PDF::API2
+
+** Resources
+   ${ROOT}/res
+
+** Installer
+*** Base Installer Options
+    Make builds installer capable
+    Always create installer
+    Include uninstaller
+    Installer Type: Cava Wx GUI
+    Installer Base Name: irealpro-installer
+    Installer Name options: os, arch, version major minor release
+*** Menus and Desktop
+    Free Desktop Vendor Prefix: squirrelconsultancy
