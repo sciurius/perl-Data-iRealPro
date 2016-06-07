@@ -19,8 +19,8 @@ irealbook format.
 
 Data::iRealPro provides a set of modules that can be used to read and
 analyse iRealPro songs in URL format and convert them into something
-else, like PDF or PNG. A ready-to-use program iRealPro is provided to
-perform conversions on the command line.
+readable, like PDF or PNG, or raw JSON data. A ready-to-use program
+iRealPro is provided to perform conversions on the command line.
 
 iRealPro web site: http://www.irealb.com .
 

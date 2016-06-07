@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Sat Apr  9 21:44:22 2016
-# Update Count    : 27
+# Last Modified On: Tue Jun  7 11:57:49 2016
+# Update Count    : 30
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -22,7 +22,7 @@ use Data::Dumper;
 
 # Process command line options, config files, and such.
 my $options;
-$options = app_setup("ireal2pdf", "0.04") unless $::__EMBEDDED__;
+$options = app_setup("ireal2pdf", "0.05") unless $::__EMBEDDED__;
 
 ################ Presets ################
 
@@ -174,6 +174,10 @@ sub app_usage {
     app_ident($fh);
     print ${fh} <<EndOfUsage;
 Usage: $0 [ options ] [ ... ]
+
+    --output=XXX	Desired output file name.
+			File name extension controls the output type.
+			Supported types: json (raw data), pdf and png.
 
 Configuration options:
     --config=CFG	project specific config file ($configs{config})

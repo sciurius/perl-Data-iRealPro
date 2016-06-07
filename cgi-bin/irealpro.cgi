@@ -3,8 +3,8 @@
 # Author          : Johan Vromans
 # Created On      : Tue Mar  3 11:09:45 2015
 # Last Modified By: Johan Vromans
-# Last Modified On: Sat Apr  9 21:45:04 2016
-# Update Count    : 321
+# Last Modified On: Thu Apr 14 21:59:25 2016
+# Update Count    : 322
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -14,10 +14,10 @@ use utf8;
 use CGI qw( -debug );
 use CGI::Carp qw(fatalsToBrowser);
 
-use lib "/home/jv/src/Music-iRealPro/CPAN";
-use lib "/home/jv/src/Music-iRealPro/lib";
+use lib "/home/jv/src/Data-iRealPro/CPAN";
+use lib "/home/jv/src/Data-iRealPro/lib";
 
-chdir("/home/jv/src/Music-iRealPro/cgi-bin");
+chdir("/home/jv/src/Data-iRealPro/cgi-bin");
 $ENV{FONTDIR} = "../fonts";
 
 use Template::Tiny;

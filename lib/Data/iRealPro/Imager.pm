@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Fri Apr  8 21:29:25 2016
-# Update Count    : 960
+# Last Modified On: Thu Apr 14 13:26:43 2016
+# Update Count    : 975
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -89,7 +89,38 @@ sub parsedata {
       unless $data =~ m;^(irealb(?:ook)?://.*?);;
 
     my $u = Data::iRealPro::URI->new( data => $data,
-				       debug => $self->{debug} );
+				      debug => $self->{debug} );
+
+    if ( $self->{output} && $self->{output} =~ /.+\.jso?n$/i ) {
+	require JSON::PP;
+	my $json = JSON::PP->new->utf8(1)->pretty->indent->canonical;
+	$json->allow_blessed->convert_blessed;
+	*UNIVERSAL::TO_JSON = sub {
+	    my $b_obj = B::svref_2object( $_[0] );
+	    return    $b_obj->isa('B::HV') ? { %{ $_[0] } }
+	      : $b_obj->isa('B::AV') ? [ @{ $_[0] } ]
+		: undef
+		  ;
+	};
+
+	# Process the song(s).
+	my @goners = qw( variant debug a2 data );
+	for my $item ( $u, $u->{playlist} ) {
+	    delete( $item->{$_} ) for @goners;
+	}
+	foreach my $song ( @{ $u->{playlist}->{songs} } ) {
+	    warn("SONG: ", $song->{title}, "\n")
+	      if $self->{verbose};
+	    $song->{tokens} = $self->decode_song($song->{data});
+	    delete( $song->{$_} ) for @goners;
+	}
+	open( my $fd, ">:utf8", $self->{output} )
+	  or die( "Cannot create ", $self->{output}, " [$!]\n" );
+	$fd->print( $json->encode($u) );
+	$fd->close;
+	return;
+    }
+
     my $plname = $u->{playlist}->{name};
     if ( $plname && @{ $u->{playlist}->{songs} } > 1 ) {
 	if ( $self->{output} && $self->{output} !~ /\.pdf$/i ) {
