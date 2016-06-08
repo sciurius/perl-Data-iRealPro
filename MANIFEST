@@ -14,6 +14,9 @@ lib/Data/iRealPro/Imager.pm
 res/fonts/BravuraCn.ttf
 res/fonts/Bravura.otf
 res/fonts/Bravura.ttf
+res/fonts/DroidSansAll.ttf
+res/fonts/DroidSans-Bold.ttf
+res/fonts/DejaVuSans.ttf
 res/fonts/FreeSansBold.ttf
 res/fonts/FreeSansCn.ttf
 res/fonts/FreeSans.ttf
