@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Thu Apr 14 13:26:43 2016
-# Update Count    : 975
+# Last Modified On: Wed Jun  8 19:25:28 2016
+# Update Count    : 1009
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -58,9 +58,15 @@ sub scale($) { 2*$_[0] };
 
 # Fonts.
 my $fonts =
-  { titlefont => "FreeSansBold.ttf",
-    textfont  => "FreeSans.ttf",
-    markfont  => "FreeSansBold.ttf",
+  {
+#    titlefont => "DroidSans-Bold.ttf",
+    titlefont => "DroidSansAll.ttf",
+#    textfont  => "DroidSans.ttf",
+#    textfont  => "DejaVuSans.ttf",
+    textfont  => "DroidSansAll.ttf",
+#    textfont  => "ArialMT.ttf",
+#    textfont  => "FreeSans.ttf",
+    markfont  => "DroidSans-Bold.ttf",
     # Normal and condensed versions
     chordfont => "Myriad-CnSemibold.ttf",
     chrdfont  => "Myriad-UcnSemibold.ttf",
@@ -108,8 +114,10 @@ sub parsedata {
 	for my $item ( $u, $u->{playlist} ) {
 	    delete( $item->{$_} ) for @goners;
 	}
+	my $songix;
 	foreach my $song ( @{ $u->{playlist}->{songs} } ) {
-	    warn("SONG: ", $song->{title}, "\n")
+	    $songix++;
+	    warn( sprintf("Song %3d: %s\n", $songix, $song->{title}) )
 	      if $self->{verbose};
 	    $song->{tokens} = $self->decode_song($song->{data});
 	    delete( $song->{$_} ) for @goners;
@@ -122,7 +130,9 @@ sub parsedata {
     }
 
     my $plname = $u->{playlist}->{name};
-    if ( $plname && @{ $u->{playlist}->{songs} } > 1 ) {
+    if ( $plname && @{ $u->{playlist}->{songs} } > 1
+	 && !$options->{select}
+       ) {
 	if ( $self->{output} && $self->{output} !~ /\.pdf$/i ) {
 	    die("Can only generate PDF for playlist\n");
 	}
@@ -156,7 +166,7 @@ sub parsedata {
     my $csv;
     my $csv_fd;
     my $csv_name;
-    if ( $outtype eq "pdf" ) {
+    if ( $outtype eq "pdf" && !$options->{select} ) {
 	$csv_name = $self->{output};
 	$csv_name =~ s/\.pdf$/.csv/i;
 	open( $csv_fd, ">:encoding(utf8)", $csv_name );
@@ -170,14 +180,17 @@ sub parsedata {
     }
 
     # Process the song(s).
+    my $songix;
     foreach my $song ( @{ $u->{playlist}->{songs} } ) {
-	warn("SONG: ", $song->{title}, "\n")
+	$songix++;
+	next if $options->{select} && $songix != $options->{select};
+	warn( sprintf("Song %3d: %s\n", $songix, $song->{title}) )
 	  if $self->{verbose};
 	my $res = $self->decode_song($song->{data});
 	my $mx = $self->make_cells( $song, $res );
 
 	my $numpages = $self->make_image( $song, $mx );
-	next unless $outtype eq "pdf";
+	next unless $outtype eq "pdf" && !$options->{select};
 
 	my $pages = $pageno;
 	if ( $numpages > 1 ) {
@@ -205,8 +218,10 @@ sub parsedata {
     if ( $outtype eq "pdf" ) {
 	$self->{pdf}->saveas($self->{output});
 	warn( "Wrote: ", $self->{output}, "\n" ) if $self->{verbose};
-	$csv_fd->close;
-	warn( "Wrote: $csv_name\n" ) if $self->{verbose};
+	if ( $csv_fd ) {
+	    $csv_fd->close;
+	    warn( "Wrote: $csv_name\n" ) if $self->{verbose};
+	}
     }
     elsif ( $outtype =~ /^png|jpg$/ ) {
 	$self->{im}->write( file => $self->{output}, type => $outtype );
@@ -646,8 +661,10 @@ sub make_image {
 	for ( $cell->mark ) {
 	    next unless $_;
 	    my $t = $_;
-	    $t = "Intro" if $t eq 'i';
-	    $t = "Verse" if $t eq 'v';
+####	    $t = "Intro" if $t eq 'i';
+	    $t = "In" if $t eq 'i';
+####	    $t = "Verse" if $t eq 'v';
+	    $t = "V" if $t eq 'v';
 	    $self->textl( $x-0.3*$musicsize, $y-0.9*$musicsize, $t,
 			  0.6*$musicsize, $markfont, $red );
 	    next;
@@ -656,6 +673,9 @@ sub make_image {
 	for ( $cell->text ) {
 	    next unless $_;
 	    my ( $disp, $t ) = @$_;
+	    # Sometimes, THAI PAIYANNOI (U+2e7) is abused as
+	    # MUSICAL SYMBOL EIGHTH REST (u+1d13e).
+	    $t =~ s/\x{e2f}/\x{1d13e}/g;
 	    $self->textl( $x+0.15*$musicsize,
 			  $y+0.55*$musicsize-($disp/(40/$musicsize)),
 			  $t, 0.5*$musicsize, $textfont, $red );
@@ -684,7 +704,7 @@ sub chord {
     $font ||= $self->{chordfont};
     $size ||= $self->{chordsize};
     $c =~ s/\*(.*?)\*/$1/;
-    $c =~ s/-/m/;
+#    $c =~ s/-/m/;
     my $bass;
     if ( $c =~ m;(.*?)/(.*); ) {
 	$bass = $2;
@@ -744,6 +764,11 @@ sub chord {
 	elsif ( $c eq "h" ) {
 	    $x += $self->textl( $x, $y,
 				    $self->{musicglyphs}->{csymHalfDiminished},
+				    0.8*$size, $self->{muscfont} );
+	}
+	elsif ( $c eq "-" ) {
+	    $x += $self->textl( $x, $y,
+				    $self->{musicglyphs}->{csymMinor},
 				    0.8*$size, $self->{muscfont} );
 	}
 	else {
@@ -885,6 +910,8 @@ sub line {
     }
 }
 
+my %fontcache;
+
 # Setup fonts.
 sub initfonts {
     my ( $self, $size ) = @_;
@@ -894,12 +921,14 @@ sub initfonts {
     for ( qw( titlefont textfont chordfont chrdfont
 	      musicfont muscfont markfont ) ) {
 	my $ff = $self->{fontdir} . $fonts->{$_};
+	die("$ff: $!\n") unless -r $ff;
 	if ( $self->{im} ) {
-	    $self->{$_} = Imager::Font->new( file => $ff )
+	    $self->{$_} =
+	      $fontcache{$ff} ||= Imager::Font->new( file => $ff )
 	      or die( "$_: ", Imager->errstr );
 	}
 	if ( $self->{pdf} ) {
-	    $self->{$_} = $self->{pdf}->ttfont( $ff );
+	    $self->{$_} = $fontcache{$ff} ||= $self->{pdf}->ttfont( $ff );
 	}
     }
 
