@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Tue Jun  7 11:57:49 2016
-# Update Count    : 30
+# Last Modified On: Wed Jun  8 16:59:05 2016
+# Update Count    : 35
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -16,13 +16,15 @@ use warnings;
 use FindBin;
 use lib "$FindBin::Bin/../CPAN";
 use lib "$FindBin::Bin/../lib";
+use Data::iRealPro;
 use Data::Dumper;
 
 ################ Setup  ################
 
 # Process command line options, config files, and such.
 my $options;
-$options = app_setup("ireal2pdf", "0.05") unless $::__EMBEDDED__;
+$options = app_setup("ireal2pdf", $Data::iRealPro::VERSION)
+  unless $::__EMBEDDED__;
 
 ################ Presets ################
 
@@ -42,6 +44,8 @@ sub main {
     my ($options) = @_;
     die("Only one input file allowed with --output\n")
       if $options->{output} && @ARGV > 1;
+    binmode(STDOUT, ':utf8');
+    binmode(STDERR, ':utf8');
     foreach ( @ARGV ) {
 	my $s = Data::iRealPro::Imager->new( $options );
 	$s->parsefile( $_, $options );
@@ -115,6 +119,7 @@ sub app_setup {
 	  ### ADD OPTIONS HERE ###
 
 	  'output=s',
+	  'select=i',
 
 	  # Configuration handling.
 	  'config=s',
@@ -178,6 +183,7 @@ Usage: $0 [ options ] [ ... ]
     --output=XXX	Desired output file name.
 			File name extension controls the output type.
 			Supported types: json (raw data), pdf and png.
+    --select=NN		Select a single song from a playlist.
 
 Configuration options:
     --config=CFG	project specific config file ($configs{config})
