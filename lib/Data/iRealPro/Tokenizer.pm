@@ -12,9 +12,13 @@ our $VERSION = "0.10";
 use Data::Dumper;
 
 my $p_root  = qr{ (?: [ABCDEFG][#b]? | W) }x;
-my $p_qual  = qr{ (?: -|\*[^*]*\*|o|h|dim|[79]?sus[24]?|[79]?alt|\^?7|\^7?)? }x;
+my $p_qual  = qr{ (?: \*[^*]*\*|o|h|dim|[79]?sus[24]?|13sus|[79]?alt|-?\^?7|-?\^7?|-|\+)* }x;
 my $p_extra = qr{ (?: (?:add|sub)? [b#]? [0-9])* }x;
-my $p_chord = qr{ $p_root $p_qual $p_extra (?: / $p_root )? }x;
+#my $p_chord = qr{ $p_root $p_qual $p_extra (?: / $p_root )? }x;
+# Give up... Allow any garbage.
+# OOPS: Doesn't work on Windows?
+#my $p_chord = qr{ $p_root [-\w\d#+*^]* (?: / $p_root )? }x;
+my $p_chord = qr{ $p_root [^\s\(\)\[\]\{\}\|,\240\<\>]* (?: / $p_root )? }x;
 
 sub new {
     my ( $pkg, %args ) = @_;
@@ -145,6 +149,10 @@ sub _timesig {
 		 "54" => "5/4",
 		 "64" => "6/4",
 		 "74" => "7/4",
+		 "28" => "2/8",
+		 "38" => "3/8",
+		 "48" => "4/8",
+		 "58" => "5/8",
 		 "68" => "6/8",
 		 "78" => "7/8",
 		 "98" => "9/8",
