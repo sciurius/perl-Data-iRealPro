@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Wed Jun  8 19:25:28 2016
-# Update Count    : 1009
+# Last Modified On: Thu Jun  9 13:35:16 2016
+# Update Count    : 1029
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -643,10 +643,10 @@ sub make_image {
 	}
 
 	for ( $cell->alt ) {	# N1, N2, ... alternatives
-	    next unless $_;
+	    next unless defined $_;
 	    my $n = $_;
 	    $self->textl( $x+0.15*$musicsize, $y-$musicsize, $n . ".",
-			  0.6*$musicsize, $textfont, $red );
+			  0.55*$musicsize, $textfont, $red ) if $n;
 	    $self->line( $x+0.1*$musicsize,
 			 $y-$musicsize,
 			 $x+0.1*$musicsize,
@@ -673,12 +673,22 @@ sub make_image {
 	for ( $cell->text ) {
 	    next unless $_;
 	    my ( $disp, $t ) = @$_;
+	    for ( split( //, $t ) ) {
+		next if $textfont->uniByEnc(ord($_));
+		warn( sprintf( "Missing glyph U+%04X\n", ord($_) ) );
+	    }
 	    # Sometimes, THAI PAIYANNOI (U+2e7) is abused as
 	    # MUSICAL SYMBOL EIGHTH REST (u+1d13e).
 	    $t =~ s/\x{e2f}/\x{1d13e}/g;
+	    # Likewise CYRILLIC SMALL LETTER GHE WITH UPTURN (U+491)
+	    # -> MUSICAL SYMBOL QUARTER REST (U+1D13D)
+	    $t =~ s/\x{491}/\x{1d13d}/g;
+	    # Likewise BOX DRAWINGS DOWN SINGLE AND LEFT DOUBLE (U+2555)
+	    # -> MUSICAL SYMBOL SIXTEENTH REST (U+1D13F)
+	    $t =~ s/\x{2555}/\x{1d13f}/g;
 	    $self->textl( $x+0.15*$musicsize,
-			  $y+0.55*$musicsize-($disp/(40/$musicsize)),
-			  $t, 0.5*$musicsize, $textfont, $red );
+			  $y+0.55*$musicsize-($disp/(45/$musicsize)),
+			  $t, 0.55*$musicsize, $textfont, $red );
 	    next;
 	}
 
@@ -928,7 +938,11 @@ sub initfonts {
 	      or die( "$_: ", Imager->errstr );
 	}
 	if ( $self->{pdf} ) {
-	    $self->{$_} = $fontcache{$ff} ||= $self->{pdf}->ttfont( $ff );
+	    unless ( $fontcache{$ff} ) {
+		$fontcache{$ff} ||= $self->{pdf}->ttfont( $ff );
+		warn( "$ff: ", $fontcache{$ff}->glyphNum, " glyphs\n" );
+	    }
+	    $self->{$_} = $fontcache{$ff};
 	}
     }
 
