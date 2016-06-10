@@ -70,14 +70,14 @@ sub tokenize {
 	    $d->( $1 eq "s" ? "small" : "large" );
 	}
 	elsif ( /^$p_chord(?:\($p_chord\))?/p ) {
-	    $d->( "chord " . ${^MATCH} );
+	    $d->( "chord " . $self->xpose(${^MATCH}) );
 	}
 	elsif ( /^$p_root/p ) {
 	    warn( "Unparsable chord: " . ${^MATCH} . "\n" );
-	    $d->( "chord? " . ${^MATCH} );
+	    $d->( "chord? " . $self->xpose(${^MATCH}) );
 	}
 	elsif ( /^\($p_chord\)/p ) {
-	    $d->( "chord " . ${^MATCH} );
+	    $d->( "chord " . $self->xpose(${^MATCH}) );
 	}
 	elsif ( /^n/p ) {	# silent chord
 	    $d->( "chord NC" );
@@ -135,6 +135,33 @@ sub tokenize {
     }
 
     return $self->{raw} ? [ @d ] : [ map { $_->[0] } @d ];
+}
+
+my $notesS  = [ split( ' ', "A A# B C C# D D# E F F# G G#" ) ];
+my $notesF  = [ split( ' ', "A Bb B C Db D Eb E F Gb G Ab" ) ];
+my %notes = ( A => 1, B => 3, C => 4, D => 6, E => 8, F => 9, G => 11 );
+
+sub xpose {
+    my ( $self, $c ) = @_;
+    return $c unless $self->{transpose};
+
+    return $c unless $c =~ m/
+				^ (
+				    [CF](?:\#)? |
+				    [DG](?:\#|b)? |
+				    A(?:\#|b)? |
+				    E(?:b)? |
+				    B(?:b)?
+				  )
+				  (.*)
+			    /x;
+    my ( $r, $rest ) = ( $1, $2 );
+    my $mod = 0;
+    $mod-- if $r =~ s/b$//;
+    $mod++ if $r =~ s/\#$//;
+    warn("WRONG NOTE: '$c' '$r' '$rest'") unless $r = $notes{$r};
+    $r = ($r - 1 + $mod + $self->{transpose}) % 12;
+    return ( $self->{transpose} > 0 ? $notesS : $notesF )->[$r] . $rest;
 }
 
 my $_sigs;

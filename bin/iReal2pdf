@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Wed Jun  8 16:59:05 2016
-# Update Count    : 35
+# Last Modified On: Fri Jun 10 10:28:36 2016
+# Update Count    : 43
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -93,6 +93,8 @@ sub app_setup {
        ### ADD OPTIONS HERE ###
 
        output		=> undef,
+       transpose	=> 0,
+       toc		=> undef,
 
        # Development options (not shown with -help).
        debug		=> 0,		# debugging
@@ -120,6 +122,8 @@ sub app_setup {
 
 	  'output=s',
 	  'select=i',
+	  'transpose|x=i',
+	  'toc!',
 
 	  # Configuration handling.
 	  'config=s',
@@ -184,6 +188,10 @@ Usage: $0 [ options ] [ ... ]
 			File name extension controls the output type.
 			Supported types: json (raw data), pdf and png.
     --select=NN		Select a single song from a playlist.
+    --transpose=NN  -x	Transpose up/down semitones.
+    --[no]toc		Produces [suppresses] the table of contents.
+			A ToC is automatically generated if a playlist
+			contains more than one song.
 
 Configuration options:
     --config=CFG	project specific config file ($configs{config})

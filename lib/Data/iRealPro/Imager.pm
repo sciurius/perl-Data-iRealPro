@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Thu Jun  9 13:35:16 2016
-# Update Count    : 1029
+# Last Modified On: Fri Jun 10 10:25:33 2016
+# Update Count    : 1063
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -25,12 +25,14 @@ use Data::iRealPro::Tokenizer;
 use Data::Dumper;
 use Text::CSV_XS;
 
+use constant FONTSX => 0;
+
 sub new {
     my ( $pkg, $options ) = @_;
 
     my $self = bless( { variant => "irealpro" }, $pkg );
 
-    for ( qw( trace debug verbose output variant debug crop ) ) {
+    for ( qw( trace debug verbose output variant transpose toc debug crop ) ) {
 	$self->{$_} = $options->{$_} if exists $options->{$_};
     }
 
@@ -57,15 +59,12 @@ use constant PAGE_HEIGHT => 842;
 sub scale($) { 2*$_[0] };
 
 # Fonts.
+#my $_default_font = "DroidSans.ttf";
+my $_default_font = "DroidSansAll.ttf";
 my $fonts =
   {
-#    titlefont => "DroidSans-Bold.ttf",
-    titlefont => "DroidSansAll.ttf",
-#    textfont  => "DroidSans.ttf",
-#    textfont  => "DejaVuSans.ttf",
-    textfont  => "DroidSansAll.ttf",
-#    textfont  => "ArialMT.ttf",
-#    textfont  => "FreeSans.ttf",
+    titlefont => $_default_font,
+    textfont  => $_default_font,
     markfont  => "DroidSans-Bold.ttf",
     # Normal and condensed versions
     chordfont => "Myriad-CnSemibold.ttf",
@@ -141,6 +140,7 @@ sub parsedata {
 	  if $options->{verbose};
 	( my $t = $plname ) =~ s/[ \/:"]/_/g;
 	$self->{output} ||= "$t.pdf";
+	$self->{toc} = 1 unless defined $self->{toc};
     }
     $self->{output} ||= "__new__.pdf";
 
@@ -181,11 +181,13 @@ sub parsedata {
 
     # Process the song(s).
     my $songix;
+    my @book;
     foreach my $song ( @{ $u->{playlist}->{songs} } ) {
 	$songix++;
 	next if $options->{select} && $songix != $options->{select};
 	warn( sprintf("Song %3d: %s\n", $songix, $song->{title}) )
 	  if $self->{verbose};
+	push( @book, [ $song->{title}, $pageno ] );
 	my $res = $self->decode_song($song->{data});
 	my $mx = $self->make_cells( $song, $res );
 
@@ -216,6 +218,7 @@ sub parsedata {
     }
 
     if ( $outtype eq "pdf" ) {
+	$pageno += $self->toc( $plname, \@book ) if $self->{toc};
 	$self->{pdf}->saveas($self->{output});
 	warn( "Wrote: ", $self->{output}, "\n" ) if $self->{verbose};
 	if ( $csv_fd ) {
@@ -237,6 +240,7 @@ sub decode_song {
     my $tokens = Data::iRealPro::Tokenizer->new
       ( debug   => $self->{debug},
 	variant => $self->{variant},
+	transpose => $self->{transpose},
       )->tokenize($str);
 
     return $tokens;
@@ -673,9 +677,11 @@ sub make_image {
 	for ( $cell->text ) {
 	    next unless $_;
 	    my ( $disp, $t ) = @$_;
-	    for ( split( //, $t ) ) {
-		next if $textfont->uniByEnc(ord($_));
-		warn( sprintf( "Missing glyph U+%04X\n", ord($_) ) );
+	    if ( FONTSX ) {
+		for ( split( //, $t ) ) {
+		    next if $textfont->uniByEnc(ord($_));
+		    warn( sprintf( "Missing glyph U+%04X\n", ord($_) ) );
+		}
 	    }
 	    # Sometimes, THAI PAIYANNOI (U+2e7) is abused as
 	    # MUSICAL SYMBOL EIGHTH REST (u+1d13e).
@@ -794,6 +800,62 @@ sub chord {
     $x += $w;
     $y += 0.2*$size;
     $self->chord( $x-$one, $y, $bass, 0.6*$size, $font );
+}
+
+sub font_bl {
+    my ( $font, $size ) = @_;
+    $size / ( 1 - $font->descender / $font->ascender );
+}
+
+sub toc {
+    my ( $self, $plname, $book ) = @_;
+
+    my $pages;
+    my $textfont  = $self->{textfont};
+    my $textsize = 10;
+
+    my $lm = 40;
+    my $rm = PAGE_WIDTH - $lm;
+    my $bm = PAGE_HEIGHT - 50;
+    my $tm = 80;
+    my $x;
+    my $y = PAGE_HEIGHT;	# force page break
+    my $dy = 1.2 * $textsize;
+    my $yb = font_bl( $textfont, $textsize );
+
+    $pages = 0;
+
+    # Draw headings for a new page.
+    my $newpage = sub {
+	$self->newpage;
+	$pages++;
+	if ( $pages == 1 ) {
+	    my $titlesize = $self->{titlesize};
+	    my $titlefont = $self->{titlefont};
+	    $self->textc( ($lm+$rm)/2, $tm-25,
+			  $plname || "Table of Contents",
+			  $titlesize, $titlefont );
+	}
+	$x = $lm;
+	$y = $tm;
+    };
+
+    foreach my $b ( @$book ) {
+
+	if ( $y > $bm ) {
+	    $newpage->();
+	}
+	$self->textr( $x+25, $y+$yb, $b->[1].".", $textsize, $textfont );
+	$self->textl( $x+30, $y+$yb, $b->[0], $textsize, $textfont );
+	my $ann = $self->{page}->annotation;
+	$ann->link($self->{pdf}->openpage($b->[1]));
+	$ann->rect( $x, PAGE_HEIGHT - $y,
+		    $x+25+$self->aw( $textfont, $textsize, $b->[0] ),
+		    PAGE_HEIGHT - ( $y + $textsize ) );
+	$y += $dy;
+    }
+
+    return $pages;
 }
 
 # New page.
@@ -940,7 +1002,8 @@ sub initfonts {
 	if ( $self->{pdf} ) {
 	    unless ( $fontcache{$ff} ) {
 		$fontcache{$ff} ||= $self->{pdf}->ttfont( $ff );
-		warn( "$ff: ", $fontcache{$ff}->glyphNum, " glyphs\n" );
+		warn( "$ff: ", $fontcache{$ff}->glyphNum, " glyphs\n" )
+		  if FONTSX;
 	    }
 	    $self->{$_} = $fontcache{$ff};
 	}
