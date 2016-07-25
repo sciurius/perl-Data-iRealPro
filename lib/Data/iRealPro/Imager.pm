@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Fri Jun 10 10:25:33 2016
-# Update Count    : 1063
+# Last Modified On: Mon Jul 25 10:25:13 2016
+# Update Count    : 1065
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -37,9 +37,12 @@ sub new {
     }
 
     $self->{fontdir} = $ENV{FONTDIR};
-    $self->{fontdir} ||= Cava::Packager::GetResourcePath() . "/fonts"
-      if $Cava::Packager::PACKAGED;
-    $self->{fontdir} ||= ".";
+    if ( $Cava::Packager::PACKAGED ) {
+	$self->{fontdir} ||= Cava::Packager::GetResourcePath() . "/fonts"
+    }
+    else {
+	$self->{fontdir} ||= "$FindBin::Bin/../res/fonts";
+    }
     $self->{fontdir} .= "/";
     $self->{fontdir} =~ s;/+$;/;;
     # Scaling (bitmaps only).
@@ -59,8 +62,8 @@ use constant PAGE_HEIGHT => 842;
 sub scale($) { 2*$_[0] };
 
 # Fonts.
-#my $_default_font = "DroidSans.ttf";
-my $_default_font = "DroidSansAll.ttf";
+my $_default_font = "DroidSans.ttf";
+#my $_default_font = "DroidSansAll.ttf";
 my $fonts =
   {
     titlefont => $_default_font,
