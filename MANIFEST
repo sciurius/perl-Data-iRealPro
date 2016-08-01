@@ -11,6 +11,7 @@ lib/Data/iRealPro/Playlist.pm
 lib/Data/iRealPro/URI.pm
 lib/Data/iRealPro/SongData.pm
 lib/Data/iRealPro/Imager.pm
+lib/Data/iRealPro/JSON.pm
 res/fonts/BravuraCn.ttf
 res/fonts/Bravura.otf
 res/fonts/Bravura.ttf
