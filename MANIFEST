@@ -12,6 +12,7 @@ lib/Data/iRealPro/URI.pm
 lib/Data/iRealPro/SongData.pm
 lib/Data/iRealPro/Imager.pm
 lib/Data/iRealPro/JSON.pm
+lib/Data/iRealPro/Bundle.pm
 res/fonts/BravuraCn.ttf
 res/fonts/Bravura.ttf
 res/fonts/DroidSans.ttf
@@ -20,3 +21,7 @@ res/fonts/Myriad-CnSemibold.ttf
 res/fonts/Myriad-UcnSemibold.ttf
 t/00-load.t
 t/10-uri.t
+pp/Makefile.lnx
+pp/Makefile.msw
+pp/irealcvt.pp
+

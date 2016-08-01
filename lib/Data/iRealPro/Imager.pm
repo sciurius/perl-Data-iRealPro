@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Mon Aug  1 15:19:27 2016
-# Update Count    : 1074
+# Last Modified On: Mon Aug  1 17:21:00 2016
+# Update Count    : 1076
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -24,8 +24,9 @@ use Data::iRealPro::URI;
 use Data::iRealPro::Tokenizer;
 use Data::Dumper;
 use Text::CSV_XS;
+use App::Packager;
 
-use constant FONTSX => 1;
+use constant FONTSX => 0;
 
 sub new {
     my ( $pkg, $options ) = @_;
@@ -37,8 +38,8 @@ sub new {
     }
 
     $self->{fontdir} = $ENV{FONTDIR};
-    if ( $Cava::Packager::PACKAGED ) {
-	$self->{fontdir} ||= Cava::Packager::GetResourcePath() . "/fonts"
+    if ( $App::Packager::PACKAGED ) {
+	$self->{fontdir} ||= App::Packager::GetResourcePath() . "/fonts"
     }
     else {
 	$self->{fontdir} ||= "$FindBin::Bin/../res/fonts";
@@ -967,7 +968,7 @@ sub initfonts {
 	unless ( -r $ff ) {
 	    my $msg = "$ff: $!\n";
 	    $msg .= "(Forgot to set environment variable FONTDIR?)\n"
-	      unless $ENV{FONTDIR} || $Cava::Packager::PACKAGED;
+	      unless $ENV{FONTDIR} || $App::Packager::PACKAGED;
 	    die($msg);
 	}
 	if ( $self->{im} ) {
