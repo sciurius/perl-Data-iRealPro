@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Mon Aug  1 11:02:13 2016
-# Update Count    : 1067
+# Last Modified On: Mon Aug  1 15:19:27 2016
+# Update Count    : 1074
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -25,7 +25,7 @@ use Data::iRealPro::Tokenizer;
 use Data::Dumper;
 use Text::CSV_XS;
 
-use constant FONTSX => 0;
+use constant FONTSX => 1;
 
 sub new {
     my ( $pkg, $options ) = @_;
@@ -648,7 +648,7 @@ sub make_image {
 	for ( $cell->text ) {
 	    next unless $_;
 	    my ( $disp, $t ) = @$_;
-	    if ( FONTSX ) {
+	    if ( FONTSX && $self->{pdf} ) {
 		for ( split( //, $t ) ) {
 		    next if $textfont->uniByEnc(ord($_));
 		    warn( sprintf( "Missing glyph U+%04X\n", ord($_) ) );
@@ -964,7 +964,12 @@ sub initfonts {
     for ( qw( titlefont textfont chordfont chrdfont
 	      musicfont muscfont markfont ) ) {
 	my $ff = $self->{fontdir} . $fonts->{$_};
-	die("$ff: $!\n") unless -r $ff;
+	unless ( -r $ff ) {
+	    my $msg = "$ff: $!\n";
+	    $msg .= "(Forgot to set environment variable FONTDIR?)\n"
+	      unless $ENV{FONTDIR} || $Cava::Packager::PACKAGED;
+	    die($msg);
+	}
 	if ( $self->{im} ) {
 	    $self->{$_} =
 	      $fontcache{$ff} ||= Imager::Font->new( file => $ff )

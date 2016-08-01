@@ -22,16 +22,25 @@ analyse iRealPro songs in URL format and convert them into something
 readable, like PDF or PNG, or raw JSON data. A ready-to-use program
 iRealPro is provided to perform conversions on the command line.
 
-iRealPro web site: http://www.irealb.com .
+I have hesitated a long time to release this module, since it contains
+code to reverse the obfuscation iRealPro uses to hide the file
+details. However, recently I encountered some more open source tools
+that handle the obfuscation in a similar way, so now I feel free to
+consider the obfuscation algorithm public anyway.
 
-INSTALLATION
+iRealPro web site: http://www.irealpro.com .
 
-To install this module, run the following commands:
+A NOTE ABOUT FONTS
 
-	perl Build.PL
-	./Build
-	./Build test
-	./Build install
+Module Data::iRealPro::Imager requires a number of fonts that are
+included in the kit. When the program is run, you can specify the
+location of the fonts with environment variable FONTDIR.
+
+To the best of my knowledge all supplied fonts are free to use for
+this purpose.
+
+The condensed variants for Bravura and Myriad-CnSemibold are
+programmatically generated from the original fonts.
 
 SUPPORT AND DOCUMENTATION
 
