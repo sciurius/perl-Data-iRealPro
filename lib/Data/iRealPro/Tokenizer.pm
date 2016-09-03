@@ -70,7 +70,14 @@ sub tokenize {
 	    $d->( $1 eq "s" ? "small" : "large" );
 	}
 	elsif ( /^$p_chord(?:\($p_chord\))?/p ) {
-	    $d->( "chord " . $self->xpose(${^MATCH}) );
+	    my $t = ${^MATCH};
+	    if ( $t =~ /^(.+)Z$/ ) {
+		$d->( "chord " . $self->xpose($1) );
+		$d->( "end" );
+	    }
+	    else {
+		$d->( "chord " . $self->xpose($t) );
+	    }
 	}
 	elsif ( /^$p_root/p ) {
 	    warn( "Unparsable chord: " . ${^MATCH} . "\n" );
