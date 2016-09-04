@@ -3,8 +3,8 @@
 # Author          : Johan Vromans
 # Created On      : Thu Mar 12 12:30:00 2015
 # Last Modified By: Johan Vromans
-# Last Modified On: Wed Jun  8 17:10:12 2016
-# Update Count    : 49
+# Last Modified On: Sun Sep  4 16:40:24 2016
+# Update Count    : 61
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -18,7 +18,7 @@ use lib "$FindBin::Bin/../lib";
 # Package name.
 my $my_package = 'Sciurix';
 # Program name and version.
-my ($my_name, $my_version) = qw( irpcvt 0.03 );
+my ($my_name, $my_version) = qw( irpcvt 0.04 );
 
 ################ Command line parameters ################
 
@@ -53,7 +53,16 @@ use Data::Dumper;
 binmode( STDOUT, ':utf8' );
 my $u = Data::iRealPro::URI->new;
 
-my $data = shift || do { local $/; <> };
+my $data = shift(@ARGV);
+if ( $data ) {
+    if ( -f $data ) {
+	unshift( @ARGV, $data);
+	$data = do { local $/; <> };
+    }
+}
+else {
+    $data = do { local $/; <> };
+}
 
 if ( $data =~ s;^.*(irealb(?:ook)?://.*?)(?:$|\").*;$1;s ) {
     $u->parse($data);
@@ -277,8 +286,8 @@ Given a document C<url.txt> that contains the following content:
 (Line breaks for display purposes only, the content should be on a
 single line.)
 
-When this document is fed to B<irpcvt> via its standard input, it will
-print:
+When this document is fed to B<irpcvt> via tqhe command line or its
+standard input, it will print:
 
   Song: Test (Me Myself)
   Style: Rumba; key: D; tempo: 180; repeat: 2;
@@ -342,11 +351,20 @@ Input file(s).
 
 =cut
 
+=head1 AUTHOR
+
 Johan Vromans <jvromans@squirrel.nl>
+
+=head1 CREDITS
+
+Credits to Massimo and his team for creating the excellent iRealPro
+program.
+
+See L<http://www.irealpro.com>.
 
 =head1 COPYRIGHT
 
-This programs is Copyright 2015, Squirrel Consultancy.
+This programs is Copyright 2015,2016 Johan Vromans
 
 The format of the iRealPro data URL may be copyrighted by iRealPro.
 
