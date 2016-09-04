@@ -3,8 +3,8 @@
 # Author          : Johan Vromans
 # Created On      : Thu Mar 12 12:30:00 2015
 # Last Modified By: Johan Vromans
-# Last Modified On: Sun Sep  4 16:40:24 2016
-# Update Count    : 61
+# Last Modified On: Sun Sep  4 21:03:49 2016
+# Update Count    : 64
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -78,13 +78,15 @@ if ( $data =~ s;^.*(irealb(?:ook)?://.*?)(?:$|\").*;$1;s ) {
 
     foreach my $s ( @{ $u->{playlist}->{songs} } ) {
 	$song++;
+	my @t = split( ' ', $s->{composer} );
+	@t[0,1] = @t[1,0] if @t == 2;
 	push( @songs,
 	      { index => $song,
 		title =>
 		  join( "",
 			( $song > 1 || $tv->{playlist}->{name} ) ? "Song $song: " : "Song: ",
 			$s->{title},
-			" (", $s->{composer},  ")" ),
+			" (@t)" ),
 		subtitle =>
 		  join( "",
 			"Style: ", $s->{style},
@@ -116,7 +118,9 @@ else {
 
     if ( $data =~ /^Song(?:\s+\d+)?:\s+(.*?)\s+\((.*?)\)/m ) {
 	$tv->{title} = $1;
-	$tv->{composer} = $2;
+	my @t = split( ' ', $2 );
+	@t[0,1] = @t[1,0] if @t == 2;
+	$tv->{composer} = "@t";
     }
 
     if ( $data =~ /Style:\s+([^;(\n]*)(?:\s+\(([^)\n]+)\))?(?:;|$)/m ) {
