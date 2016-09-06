@@ -3,9 +3,12 @@
 # Dummy for the packager, to get output backends and other
 # conditionally required modules included.
 
-# Optional backends.
+# Backends.
+use Data::iRealPro::Input;
+use Data::iRealPro::Output;
 use Data::iRealPro::Imager;
 use Data::iRealPro::JSON;
+use Data::iRealPro::Text;
 
 # Conditional requires for D::i::Imager.
 use PDF::API2;

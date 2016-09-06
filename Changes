@@ -1,5 +1,11 @@
 Revision history for Data-iRealPro
 
+0.07	2016-09-xx
+
+	Integrate editable text input/output.
+	Rework of the module structure.
+	Add NPP (near pixel perfect) graphics.
+
 0.06.1  2016-01-01
 	Add PAR packaging.
 

@@ -1,6 +1,6 @@
 #!perl -T
 
-use Test::More tests => 7;
+use Test::More tests => 6;
 
 BEGIN {
 	use_ok( 'Font::TTF' );
@@ -8,7 +8,6 @@ BEGIN {
 	use_ok( 'Config::Tiny' );
 	use_ok( 'Data::Struct' );
 	use_ok( 'Text::CSV_XS' );
-	use_ok( 'Template::Tiny' );
 	use_ok( 'Imager' );
 }
 

@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Mon Aug  1 17:21:00 2016
-# Update Count    : 1076
+# Last Modified On: Tue Sep  6 20:23:52 2016
+# Update Count    : 1317
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -31,18 +31,33 @@ use constant FONTSX => 0;
 sub new {
     my ( $pkg, $options ) = @_;
 
+    if ( $options->{npp} ) {
+	if ( $options->{npp} =~ s/-$// ) {
+	    $options->{npp_minor} = '';
+	}
+	else {
+	    $options->{npp_minor} = 'm';
+	}
+	$options->{npp} = 'straight' unless $options->{npp} eq 'hand';
+    }
+
     my $self = bless( { variant => "irealpro" }, $pkg );
 
-    for ( qw( trace debug verbose output variant transpose toc crop ) ) {
+    for ( qw( trace debug verbose output variant transpose toc crop
+	      npp npp_minor
+	   ) ) {
 	$self->{$_} = $options->{$_} if exists $options->{$_};
     }
+    $self->{npp} ||= 0;
 
     $self->{fontdir} = $ENV{FONTDIR};
     if ( $App::Packager::PACKAGED ) {
-	$self->{fontdir} ||= App::Packager::GetResourcePath() . "/fonts"
+	$self->{resdir} = App::Packager::GetResourcePath();
+	$self->{fontdir} ||= $self->{resdir} . "/fonts"
     }
     else {
-	$self->{fontdir} ||= "$FindBin::Bin/../res/fonts";
+	$self->{resdir} = "$FindBin::Bin/../res";
+	$self->{fontdir} ||= $self->{resdir} . "/fonts"
     }
     $self->{fontdir} .= "/";
     $self->{fontdir} =~ s;/+$;/;;
@@ -59,6 +74,12 @@ sub new {
 use constant PAGE_WIDTH  => 595;
 use constant PAGE_HEIGHT => 842;
 
+# NPP operations are done on a fixed canvas. Eventually, the result
+# will be scaled to match the desired output dimensions.
+
+use constant CANVAS_WIDTH  => 1920;
+use constant CANVAS_HEIGHT => 2480;
+
 # Scaling for bitmap graphics to get finer images.
 sub scale($) { 2*$_[0] };
 
@@ -68,6 +89,7 @@ my $_default_font = "DroidSans.ttf";
 my $fonts =
   {
     titlefont => $_default_font,
+    stitlefont => $_default_font,
     textfont  => $_default_font,
     markfont  => "DroidSans-Bold.ttf",
     # Normal and condensed versions
@@ -81,24 +103,8 @@ my $fonts =
 my $black = "#000000";
 my $red   = "#ff0000";
 
-sub parsefile {
-    my ( $self, $file, $options ) = @_;
-
-    open( my $fd, '<', $file ) or die("$file: $!\n");
-    my $data = do { local $/; <$fd> };
-    $self->parsedata( $data, $options );
-}
-
-sub parsedata {
-    my ( $self, $data, $options ) = @_;
-
-    # Extract URL.
-    $data =~ s;^.*(irealb(?:ook)?://.*?)(?:$|\").*;$1;s;
-    $data = "irealbook://" . $data
-      unless $data =~ m;^(irealb(?:ook)?://.*?);;
-
-    my $u = Data::iRealPro::URI->new( data => $data,
-				      debug => $self->{debug} );
+sub process {
+    my ( $self, $u, $options ) = @_;
 
     my $plname = $u->{playlist}->{name};
     if ( $plname && @{ $u->{playlist}->{songs} } > 1
@@ -123,10 +129,29 @@ sub parsedata {
 	$self->{pdf}->mediabox( 0, PAGE_HEIGHT, PAGE_WIDTH, 0 );
     }
     elsif ( $outtype =~ /^png|jpg$/ && eval { require Imager } ) {
-	$self->{im} = Imager->new( xsize => scale(PAGE_WIDTH),
-				   ysize => scale(PAGE_HEIGHT),
-				   model => 'rgb',
-				 ) or die( Imager->errstr );
+	if ( $self->{npp} ) {
+	    no warnings 'redefine';
+	    eval( "sub scale(\$) { \$_[0] };" );
+	    $self->{im} =
+	      Imager->new( xsize => scale(CANVAS_WIDTH),
+			   ysize => scale(CANVAS_HEIGHT),
+			   model => 'rgb',
+			 );
+	    if ( $self->{npp} eq 'hand' ) {
+		$fonts->{titlefont} =
+		  $fonts->{stitlefont} =
+		    $fonts->{textfont} =
+		      "Felt-Regular.ttf";
+	    }
+	}
+	else {
+	    $self->{im} =
+	      Imager->new( xsize => scale(PAGE_WIDTH),
+			   ysize => scale(PAGE_HEIGHT),
+			   model => 'rgb',
+			 );
+	}
+	$self->{im} or die( Imager->errstr );
 
     }
     else {
@@ -199,6 +224,14 @@ sub parsedata {
 	}
     }
     elsif ( $outtype =~ /^png|jpg$/ ) {
+	if ( $self->{im}->getheight > CANVAS_HEIGHT ) {
+	    warn("Scaling output...\n");
+	    $self->{im} =
+	      $self->{im}->scale( xpixels => CANVAS_WIDTH,
+				  ypixels => CANVAS_HEIGHT,
+				  type => 'nonprop' );
+	}
+	warn("Writing output...\n");
 	$self->{im}->write( file => $self->{output}, type => $outtype );
 	warn( "Wrote: ", $self->{output}, "\n" ) if $self->{verbose};
     }
@@ -411,6 +444,10 @@ my %smufl =
 my $numrows = 16;
 my $numcols = 16;
 
+use constant CHORD_NORMAL      => 0x00;
+use constant CHORD_CONDENSED   => 0x01;
+use constant CHORD_ALTERNATIVE => 0x02;
+
 # Generalized formatter for PDF::API2 and Imager.
 sub make_image {
     # {{{
@@ -442,6 +479,23 @@ sub make_image {
 	$dy = 1.6*$musicsize;
     }
 
+    if ( $self->{npp} ) {
+	$lm = 68;
+	$tm = 208;
+	$dx = ( CANVAS_WIDTH - $lm - 18 ) / $numcols;
+	$dy = 296;
+
+	# Calculate the required heigth and create the canvas.
+	my $v = $tm;		# top margin
+	$v += int( ( @$cells + 15 ) / $numcols ) * $dy; # cells
+	$v += ( $cells->[-1]->vs || 0 ) * 121;	       # extra
+	$v = CANVAS_HEIGHT if $v < CANVAS_HEIGHT; # minimal
+	$self->{im} = Imager->new( xsize => CANVAS_WIDTH,
+				   ysize => $v,
+				   model => 'rgba',
+				 );
+    }
+
     $self->{pages} = 0;
 
     # Draw headings for a new page.
@@ -450,21 +504,33 @@ sub make_image {
 
 	my $titlesize = $self->{titlesize};
 	my $titlefont = $self->{titlefont};
+	my $stitlesize = $self->{stitlesize};
+	my $stitlefont = $self->{stitlefont};
 	my $ddx = 0.15*$musicsize;
 
-	# If the composer is two words, assume lastname firstname.
-	# iRealPro swaps them.
-	my @t = split( ' ', $song->{composer} );
-	@t[0,1] = @t[1,0] if @t == 2;
+	my @arg = ( ($lm+$rm)/2-$ddx, $tm-80, $song->{title},
+		    $titlesize, $titlefont );
+	@arg[0,1] = ( CANVAS_WIDTH/2, 75 ) if $self->{npp};
+	$self->textc(@arg);
 
-	$self->textc( ($lm+$rm)/2-$ddx, $tm-80, $song->{title},
-		      $titlesize, $titlefont );
-	$self->textl( $lm-$ddx, $tm-50, "(".$song->{style}.")",
-		      0.85*$titlesize, $textfont )
-	  if $song->{composer};
-	$self->textr( $rm+$ddx, $tm-50, "@t",
-		      0.85*$titlesize, $textfont )
-	  if $song->{style};
+	if ( $song->{style} ) {
+	    @arg = ( $lm-$ddx, $tm-50, "(".$song->{style}.")",
+		     $stitlesize, $stitlefont );
+	    @arg[0,1] = ( $lm + 10, 136 ) if $self->{npp};
+	    $self->textl(@arg);
+	}
+
+	if ( $song->{composer} ) {
+	    # If the composer is two words, assume lastname firstname.
+	    # iRealPro swaps them.
+	    my @t = split( ' ', $song->{composer} );
+	    @t[0,1] = @t[1,0] if @t == 2;
+	    @arg = ( $rm+$ddx, $tm-50, "@t",
+		     $stitlesize, $stitlefont );
+	    @arg[0,1] = ( CANVAS_WIDTH - 60, 134 ) if $self->{npp};
+	    $self->textr(@arg);
+	}
+
     };
 
     my $low;			# water mark to crop image
@@ -491,7 +557,12 @@ sub make_image {
 	# Adjust vertical position.
 	for ( $cell->vs ) {
 	    next unless $_;
-	    $y += $_*0.3*$dy;
+	    if ( $self->{npp} ) {
+		$y += $_*121;
+	    }
+	    else {
+		$y += $_*0.3*$dy;
+	    }
 	}
 
 	# Adjust low water mark.
@@ -503,6 +574,12 @@ sub make_image {
 
 	for ( $cell->lbar ) {
 	    next unless $_;
+
+	    if ( $self->{npp} ) {
+		$self->npp_bar( $x, $y, $_ );
+		next;
+	    }
+
 	    my $col = /^repeat(?:Right)?Left$/ ? $red : $black;
 	    $self->glyphc( $x, $y, $_, undef, $col );
 	    next;
@@ -510,6 +587,12 @@ sub make_image {
 
 	for ( $cell->rbar ) {
 	    next unless $_;
+
+	    if ( $self->{npp} ) {
+		$self->npp_bar( $x+$dx, $y, $_ );
+		next;
+	    }
+
 	    my $col = $black;
 	    if ( /^repeatRight$/ ) {
 		$col = $red;
@@ -528,6 +611,12 @@ sub make_image {
 	for ( $cell->time ) {
 	    next unless $_;
 	    my ( $t1, $t2 ) = @$_;
+	    if ( $self->{npp} ) {
+		$t2 = "" if $t1 == 12 && $t2 == 8;
+		$self->npp_sig( $x, $y, "$t1$t2" );
+		next;
+	    }
+
 	    my $w = $self->aw( $musicfont, 0.7*$musicsize,
 			       $musicglyphs->{timeSig0} ) / 2;
 	    # Move left half $w for centering, and half $w to get
@@ -550,8 +639,44 @@ sub make_image {
 
 	for ( $cell->sign ) {	# coda, segno, ...
 	    next unless $_;
+	    if ( $self->{npp} ) {
+		$self->npp_sign( $x, $y, $_ );
+		next;
+	    }
+
 	    $self->glyphl( $x+0.15*$musicsize, $y-1.05*$musicsize,
 			   $_, 0.7*$musicsize, $red );
+	    next;
+	}
+
+	for ( $cell->text ) {
+	    next unless $_;
+	    my ( $disp, $t ) = @$_;
+	    # Displacement is 0 .. 74, in steps of 3.
+	    if ($self->{npp} ) {
+		$self->textl( $x-2, $y + $dy - 27 - ($dy / 74) * $disp, $t,
+			      74, $textfont, $red );
+		next;
+	    }
+
+	    if ( FONTSX && $self->{pdf} ) {
+		for ( split( //, $t ) ) {
+		    next if $textfont->uniByEnc(ord($_));
+		    warn( sprintf( "Missing glyph U+%04X\n", ord($_) ) );
+		}
+	    }
+	    # Sometimes, THAI PAIYANNOI (U+2e7) is abused as
+	    # MUSICAL SYMBOL EIGHTH REST (u+1d13e).
+	    $t =~ s/\x{e2f}/\x{1d13e}/g;
+	    # Likewise CYRILLIC SMALL LETTER GHE WITH UPTURN (U+491)
+	    # -> MUSICAL SYMBOL QUARTER REST (U+1D13D)
+	    $t =~ s/\x{491}/\x{1d13d}/g;
+	    # Likewise BOX DRAWINGS DOWN SINGLE AND LEFT DOUBLE (U+2555)
+	    # -> MUSICAL SYMBOL SIXTEENTH REST (U+1D13F)
+	    $t =~ s/\x{2555}/\x{1d13f}/g;
+	    $self->textl( $x+0.15*$musicsize,
+			  $y+0.55*$musicsize-($disp/(45/$musicsize)),
+			  $t, 0.55*$musicsize, $textfont, $red );
 	    next;
 	}
 
@@ -580,8 +705,13 @@ sub make_image {
 		# Center between the barlines.
 		$x -= ( $i-$pb ) * $dx;
 		$x += ( $nb-$pb+1 ) * $dx/2;
-		$self->textc( $x, ($y-0.3*$musicsize),
-			      $musicglyphs->{$c}, $chordsize, $musicfont );
+		if ( $self->{npp} ) {
+		    $self->npp_repeat1( $x, $y );
+		}
+		else {
+		    $self->textc( $x, ($y-0.3*$musicsize),
+				  $musicglyphs->{$c}, $chordsize, $musicfont );
+		}
 		next;
 	    }
 
@@ -597,30 +727,56 @@ sub make_image {
 
 		# Overprint next barline.
 		$x += ( $nb-$i+1 ) * $dx;
-		$self->textc( $x, ($y-0.3*$musicsize),
-			      $musicglyphs->{$c}, $chordsize, $musicfont );
+		if ( $self->{npp} ) {
+		    $self->npp_repeat2( $x, $y );
+		}
+		else {
+		    $self->textc( $x, ($y-0.3*$musicsize),
+				  $musicglyphs->{$c}, $chordsize, $musicfont );
+		}
 		next;
 	    }
 
 	    if ( $c =~ /^repeat(Slash)$/ ) {
-		$self->textl( $x+0.4*$musicsize, $y, "/", $chordsize, $chordfont );
+		if ( $self->{npp} ) {
+		    $self->npp_slash( $x, $y );
+		}
+		else {
+		    $self->textl( $x+0.4*$musicsize, $y, "/", $chordsize, $chordfont );
+		}
 		next;
 	    }
 
-	    $self->chord( $x+0.15*$musicsize, $y, $c, $musicsize, $font );
+	    if ( $self->{npp} ) {
+		$self->npp_chord( $x, $y, $c,
+				  $cell->sz ? CHORD_CONDENSED : CHORD_NORMAL );
+	    }
+	    else {
+		$self->chord( $x+0.15*$musicsize, $y, $c, $musicsize, $font );
+	    }
 	    next;
 	}
 
 	for ( $cell->subchord ) {
 	    next unless $_;
-	    $self->chord( $x+0.15*$musicsize, $y-$musicsize,
-			  $_, 0.7*$chordsize );
+	    if ( $self->{npp} ) {
+		$self->npp_chord( $x, $y, $_, CHORD_ALTERNATIVE );
+	    }
+	    else {
+		$self->chord( $x+0.15*$musicsize, $y-$musicsize,
+			      $_, 0.7*$chordsize );
+	    }
 	    next;
 	}
 
 	for ( $cell->alt ) {	# N1, N2, ... alternatives
 	    next unless defined $_;
 	    my $n = $_;
+	    if ( $self->{npp} ) {
+		$self->npp_ending( $x, $y, $n );
+		next;
+	    }
+
 	    $self->textl( $x+0.15*$musicsize, $y-$musicsize, $n . ".",
 			  0.55*$musicsize, $textfont, $red ) if $n;
 	    $self->line( $x+0.1*$musicsize,
@@ -636,6 +792,11 @@ sub make_image {
 
 	for ( $cell->mark ) {
 	    next unless $_;
+	    if ( $self->{npp} ) {
+		$self->npp_mark( $x, $y, lc $_ );
+		next;
+	    }
+
 	    my $t = $_;
 ####	    $t = "Intro" if $t eq 'i';
 	    $t = "In" if $t eq 'i';
@@ -643,30 +804,6 @@ sub make_image {
 	    $t = "V" if $t eq 'v';
 	    $self->textl( $x-0.3*$musicsize, $y-0.9*$musicsize, $t,
 			  0.6*$musicsize, $markfont, $red );
-	    next;
-	}
-
-	for ( $cell->text ) {
-	    next unless $_;
-	    my ( $disp, $t ) = @$_;
-	    if ( FONTSX && $self->{pdf} ) {
-		for ( split( //, $t ) ) {
-		    next if $textfont->uniByEnc(ord($_));
-		    warn( sprintf( "Missing glyph U+%04X\n", ord($_) ) );
-		}
-	    }
-	    # Sometimes, THAI PAIYANNOI (U+2e7) is abused as
-	    # MUSICAL SYMBOL EIGHTH REST (u+1d13e).
-	    $t =~ s/\x{e2f}/\x{1d13e}/g;
-	    # Likewise CYRILLIC SMALL LETTER GHE WITH UPTURN (U+491)
-	    # -> MUSICAL SYMBOL QUARTER REST (U+1D13D)
-	    $t =~ s/\x{491}/\x{1d13d}/g;
-	    # Likewise BOX DRAWINGS DOWN SINGLE AND LEFT DOUBLE (U+2555)
-	    # -> MUSICAL SYMBOL SIXTEENTH REST (U+1D13F)
-	    $t =~ s/\x{2555}/\x{1d13f}/g;
-	    $self->textl( $x+0.15*$musicsize,
-			  $y+0.55*$musicsize-($disp/(45/$musicsize)),
-			  $t, 0.55*$musicsize, $textfont, $red );
 	    next;
 	}
 
@@ -962,8 +1099,12 @@ sub initfonts {
     $size ||= 20;
 
     # Make font objects.
-    for ( qw( titlefont textfont chordfont chrdfont
-	      musicfont muscfont markfont ) ) {
+    my @fonts =  qw( titlefont stitlefont textfont );
+    push( @fonts, qw( chordfont chrdfont
+		      musicfont muscfont markfont ) )
+      unless $self->{npp};
+
+    for ( @fonts ) {
 	my $ff = $self->{fontdir} . $fonts->{$_};
 	unless ( -r $ff ) {
 	    my $msg = "$ff: $!\n";
@@ -988,9 +1129,259 @@ sub initfonts {
 
     $self->{musicsize} = $size;
     $self->{chordsize} = $self->{musicsize};
-    $self->{titlesize} = $self->{musicsize};
     $self->{musicglyphs} = \%smufl;
+    if ( $self->{npp} ) {
+	$self->{titlesize} = 87;
+	$self->{stitlesize} = 77;
+	# Text is slightly wider??
+	use Imager::Matrix2d;
+	# Don't scale the titlefont as well :)
+	my $ff = $self->{fontdir} . $fonts->{textfont};
+	$self->{textfont} = Imager::Font->new( file => $ff);
+	$self->{textfont}->transform(matrix=>Imager::Matrix2d->scale(x=>1.05,y=>1));
+    }
+    else {
+	$self->{titlesize}  = $self->{musicsize};
+	$self->{stitlesize} = 0.85 * $self->{titlesize};
+    }
 
+}
+
+################ NPP routines ################
+
+sub npp_chord {
+    my ( $self, $x, $y, $c, $flags ) = @_;
+    my ( $root, $quality, $bass ) = $self->xchord($c);
+
+    # Flags: 0x00   normal
+    #        0x01   condensed
+    #        0x02   alternate
+    #        0x03   condensed, alternate
+    #               condensed alternate is the same as alternate
+
+    if ( $c eq "NC" ) {
+	my $img = $self->getimg("root_nc");
+	$x += 29;
+	$y += 41;
+	if ( $flags & CHORD_CONDENSED ) {
+	    $img = $img->scale( xscalefactor => 0.7, yscalefactor => 1 );
+	    $x -= 31;
+	}
+	if ( $flags & CHORD_ALTERNATIVE ) {
+	    ...;
+	}
+	$self->{im}->rubthrough( src => $img,
+				 tx => $x, ty => $y );
+	return;
+    }
+
+    if ( $c =~ /^(.+)\*(.*)\*(.*)$/ ) {
+	$self->textl( $x + 85, $y + 168, $2,
+		      $self->{stitlesize}, $self->{stitlefont} );
+	$c = $1.$3;
+    }
+    my $img = $self->chordimg( $c, $flags );
+    if ( $flags & CHORD_ALTERNATIVE ) {
+	$self->{im}->rubthrough( src => $img,
+				 tx => $x + 9, ty => $y - 98 );
+    }
+    else {
+	$self->{im}->rubthrough( src => $img, tx => $x, ty => $y );
+	return;
+    }
+
+}
+
+sub xchord {
+    my ( $self, $c ) = @_;
+    my ( $root, $quality, $bass ) = ( "", "", "" );
+    $c = lc($c);
+    return ( "nc", "", "" ) if $c eq "nc";
+
+    if ( $c =~ m;^(.*)/(.+)$; ) {
+	$c = $1;
+	$bass = $2;
+    }
+    if ( $c =~ m;^([a-gw][b#]?)(.*)$; ) {
+	$root = $1;
+	$quality = $2;
+	if ( $quality =~ s/^-/m/ ) {
+	    $quality .= $self->{npp_minor};
+	}
+    }
+    $quality =~ s/\#/x/g;
+    $quality =~ s/\^/v/g;
+    $quality =~ s/\+/p/g;
+    ( $root, $quality, $bass );
+}
+
+my $im_bar;
+
+sub npp_bar {
+    my ( $self, $x, $y, $bar ) = @_;
+    $bar ||= "bar";
+
+    $im_bar ||=
+      {
+       barlineSingle  =>
+         $self->getimg("single_barline")->scale( scalefactor => 2 ),
+       barlineDouble  =>
+         $self->getimg("double_barline")->scale( scalefactor => 2 ),
+       barlineFinal   =>
+         $self->getimg("double_barline_close")->scale( scalefactor => 2 ),
+       repeatLeft     =>
+         $self->getimg("repeat_barline_open"),
+       repeatRight    =>
+         $self->getimg("repeat_barline_close"),
+      };
+
+    $y -= 18 if $bar eq "repeatLeft" || $bar eq "repeatRight";
+    $x -= 25 if $bar eq "repeatRight";
+    $x -= 1 if $bar eq "repeatLeft";
+    $x -= 7 if $bar eq "barlineDouble";
+    $x -= 3 if $bar eq "barlineFinal";
+    $x -= 9 if $bar eq "barlineSingle";
+    my $w = $im_bar->{$bar}->getwidth;
+    $self->{im}->rubthrough( src => $im_bar->{$bar},
+			     tx => $x - $w/2, ty => $y );
+}
+
+sub npp_sig {
+    my ( $self, $x, $y, $s ) = @_;
+    $self->{im}->rubthrough( src => $self->getimg("time_signature_$s")
+			            ->scale( xscalefactor => 0.95,
+					     yscalefactor => 1.05 ),
+			     tx => $x-63, ty => $y+12 );
+}
+
+sub npp_mark {
+    my ( $self, $x, $y, $m ) = @_;
+    $self->{im}->rubthrough( src => $self->getimg("rehearsal_mark_$m"),
+			     tx => $x-55, ty => $y-76 );
+}
+
+sub npp_repeat1 {
+    my ( $self, $x, $y ) = @_;
+    my $r = $self->getimg("root_x");
+    my $w = $r->getwidth;
+    $self->{im}->rubthrough( src => $r,
+			     tx => $x - $w/2 - 6,
+			     ty => $y + 56 );
+}
+
+sub npp_repeat2 {
+    my ( $self, $x, $y ) = @_;
+    my $r = $self->getimg("root_xx");
+    my $w = $r->getwidth;
+    $self->{im}->rubthrough( src => $r,
+			     tx => $x - $w/2 - 6,
+			     ty => $y + 56 );
+}
+
+sub npp_ending {
+    my ( $self, $x, $y, $n ) = @_;
+    $n = $n == 1 ? "first"
+      : $n == 2 ? "second"
+	: $n == 3 ? "third"
+	  : "zero";
+    $self->{im}->rubthrough( src => $self->getimg("ending_$n"),
+			     tx => $x, ty => $y - 72 );
+}
+
+sub npp_sign {
+    my ( $self, $x, $y, $sign ) = @_;
+    $x -= 16 if $sign eq "fermata";
+    $self->{im}->rubthrough( src => $self->getimg($sign),
+			     tx => $x + 7, ty => $y - 88 );
+}
+
+sub npp_slash {
+    my ( $self, $x, $y ) = @_;
+    $self->{im}->rubthrough( src => $self->getimg("root_slash"),
+			     tx => $x, ty => $y );
+}
+
+my %npp_imgcache;
+
+sub getimg {
+    my ( $self, $img ) = @_;
+    return $npp_imgcache{$img} if $npp_imgcache{$img};
+
+    my $if = $self->{resdir} . "/prefab/" . $self->{npp} . "/$img.png";
+    my $red = 0;
+    unless ( -s $if ) {
+	$red = 1;
+	warn("Substituting <notfound> for \"$img\"\n");
+	$if = $self->{resdir} . "/prefab/" . $self->{npp} . "/quality_h.png";
+    }
+    $npp_imgcache{$img} = Imager->new( file => $if )
+      or die( Imager->errstr );
+
+    $red ||=  $img =~ /^ (?:
+			   .*rehearsal_mark_. |
+			   repeat_barline_(?:open|close) |
+			   time_signature_.. |
+			   ending_.* |
+			   coda | fermata | segno
+		       ) $/x;
+    $npp_imgcache{$img}->map( red => [ reverse( 0..255) ] ) if $red;
+
+    return $npp_imgcache{$img};
+}
+
+sub chordimg {
+    my ( $self, $chord, $flags ) = @_;
+    my ( $root, $quality, $bass ) = $self->xchord($chord);
+
+    my $img = join( "|", "", $root, $quality||"", $bass||"",
+		         sprintf("%d", $flags), "" );
+    return $npp_imgcache{$img} if $npp_imgcache{$img};
+
+    my $im = Imager->new( xsize => 218,
+			  ysize => 262,
+			  model => 'rgba'
+			) or die( Imager->errstr );
+
+    my $acc;
+    ( $root, $acc ) = ( $1, $2 ) if $root =~ /^([a-gw])([b#x])$/;
+    $acc = $acc eq 'b' ? "flat" : "sharp" if $acc;
+
+    my $dx = $flags & CHORD_ALTERNATIVE ? 6 : 0;
+    my $dy = $flags & CHORD_ALTERNATIVE ? -6 : 0;
+    $im->rubthrough( src => $self->getimg("root_$root"),
+		     tx => 0, ty => 0 );
+    $im->rubthrough( src => $self->getimg("root_$acc"),
+		     tx => 0, ty => 0 ) if $acc;
+    $im->rubthrough( src => $self->getimg("quality_$quality"),
+		     tx => 84, ty => $dy+80 ) if $quality;
+
+    if ( $bass ) {
+
+	( $root, $acc ) = $bass =~ /^([a-g])([b#x]?)$/;
+	$acc = $acc eq 'b' ? "flat" : "sharp" if $acc;
+
+	$dx = $flags & CHORD_CONDENSED ? 10 : 0;
+	$dx += 50 if $flags & CHORD_ALTERNATIVE;
+	$dy = $flags & CHORD_CONDENSED ? -5 : 0;
+	$dy -= 5 if $flags & CHORD_ALTERNATIVE;
+	my $sc = $flags & CHORD_CONDENSED ? 0.68 : 0.65;
+	my $sc2 = $flags & CHORD_CONDENSED ? 0.58 : 0.55;
+	$im->rubthrough( src => $self->getimg("root_$root")
+			 ->scale( scalefactor => $sc ),
+			 tx => $dx+65, ty => $dy+153 );
+	$im->rubthrough( src => $self->getimg("root_$acc")
+			 ->scale( scalefactor => $sc ),
+			 tx => $dx+65, ty => $dy+177 ) if $acc;
+	$im->rubthrough( src => $self->getimg("root_slash")
+			 ->scale( xscalefactor => 0.85,
+				  yscalefactor => $sc2 ),
+			 tx => $dx+0, ty => 142 );
+    }
+
+    $im = $im->scale( xscalefactor => 0.7, yscalefactor => 1 ) if $flags & CHORD_CONDENSED;
+    $im = $im->scale( xscalefactor => 0.62, yscalefactor => 0.62 ) if $flags & CHORD_ALTERNATIVE;
+
+    return $npp_imgcache{$img} = $im;
 }
 
 1;

@@ -3,8 +3,8 @@
 # Author          : Johan Vromans
 # Created On      : Tue Mar  3 11:09:45 2015
 # Last Modified By: Johan Vromans
-# Last Modified On: Thu Apr 14 21:59:25 2016
-# Update Count    : 322
+# Last Modified On: Wed Sep  7 14:42:51 2016
+# Update Count    : 328
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -24,6 +24,7 @@ use Template::Tiny;
 use Data::iRealPro::URI;
 use Data::iRealPro::SongData;
 use Data::iRealPro::Imager;
+use Data::iRealPro::Input;
 
 my $my_package = "Sciurix";
 my ($my_name, $my_version) = qw( iRealPro/Web 0.04 );
@@ -94,7 +95,22 @@ foreach my $s ( @{ $u->{playlist}->{songs} } ) {
 
     my $image = "tmp/ir$$.png";
     my $options = { output => $image, scale => 1.4, crop => 1 };
-    Data::iRealPro::Imager->new($options)->parsedata( $uri, $options );
+
+    # Re-package the song in a playlist.
+    my $pl = Data::iRealPro::Playlist->new
+      ( variant      => "irealpro",
+	songs        => [ $s ],
+	 $tv->{playlist}->{name} ? ( name => $tv->{playlist}->{name}  ) : (),
+      );
+
+    # Build a URI for the playlist.
+    my $uri = Data::iRealPro::URI->new
+      ( variant      => "irealpro",
+	playlist     => $pl,
+      );
+
+    # Generate image.
+    Data::iRealPro::Imager->new($options)->process($uri);
 
     push( @songs,
 	  { index => $song,

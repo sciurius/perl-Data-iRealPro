@@ -11,6 +11,9 @@ BEGIN {
 		  'Data::iRealPro::Parser',
 		  'Data::iRealPro::Imager',
 		  'Data::iRealPro::JSON',
+		  'Data::iRealPro::Text',
+		  'Data::iRealPro::Input',
+		  'Data::iRealPro::Output',
 		);
 }
 

@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Mon Aug  1 11:02:03 2016
-# Update Count    : 1070
+# Last Modified On: Tue Sep  6 16:21:16 2016
+# Update Count    : 1076
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -18,10 +18,9 @@ use utf8;
 
 package Data::iRealPro::JSON;
 
-our $VERSION = "0.04";
+our $VERSION = "0.05";
 
-use Data::iRealPro::URI;
-use Data::iRealPro::Tokenizer;
+use Data::iRealPro::Output;
 use JSON::PP;
 
 sub new {
@@ -36,24 +35,8 @@ sub new {
     return $self;
 }
 
-sub parsefile {
-    my ( $self, $file, $options ) = @_;
-
-    open( my $fd, '<', $file ) or die("$file: $!\n");
-    my $data = do { local $/; <$fd> };
-    $self->parsedata( $data, $options );
-}
-
-sub parsedata {
-    my ( $self, $data, $options ) = @_;
-
-    # Extract URL.
-    $data =~ s;^.*(irealb(?:ook)?://.*?)(?:$|\").*;$1;s;
-    $data = "irealbook://" . $data
-      unless $data =~ m;^(irealb(?:ook)?://.*?);;
-
-    my $u = Data::iRealPro::URI->new( data => $data,
-				      debug => $self->{debug} );
+sub process {
+    my ( $self, $u, $options ) = @_;
 
     $self->{output} ||= "__new__.json";
 
