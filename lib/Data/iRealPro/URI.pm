@@ -23,10 +23,10 @@ sub parse {
 
     # Un-URI-escape and decode.
     $data =~ s/[\r\n]*//g;
+    $data =~ s;^.+(irealb(?:ook)?://.*?)(?:$|\").*;$1;s;
     $data =~ s/%([0-9a-f]{2})/sprintf("%c",hex($1))/gie;
     $data = decode_utf8($data);
 
-    $data =~ s;^.+(irealb(?:ook)?://.*?)(?:$|\").*;$1;s;
     $self->{data} = $data if $self->{debug};
 
     if ( $data =~ m;^irealb(ook)?://; ) {
