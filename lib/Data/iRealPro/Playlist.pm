@@ -6,7 +6,7 @@ use Carp;
 
 package Data::iRealPro::Playlist;
 
-our $VERSION = "0.01";
+our $VERSION = "0.02";
 
 use Data::iRealPro::SongData;
 
@@ -14,6 +14,8 @@ sub new {
     my ( $pkg, %args ) = @_;
     my $self = bless { %args }, $pkg;
     $self->parse( $args{data} ) if $args{data};
+    $self->{songs} = [ $args{song} ] if $args{song};
+    $self->{songs} = $args{songs} if $args{songs};
     delete $self->{data} unless $self->{debug};
     return $self;
 }

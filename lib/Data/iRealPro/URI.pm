@@ -6,7 +6,7 @@ use Carp;
 
 package Data::iRealPro::URI;
 
-our $VERSION = "0.01";
+our $VERSION = "0.02";
 
 use Data::iRealPro::Playlist;
 use Encode qw(decode_utf8 encode_utf8);
@@ -15,6 +15,7 @@ sub new {
     my ( $pkg, %args ) = @_;
     my $self = bless { %args }, $pkg;
     $self->parse( $args{data} ) if $args{data};
+    $self->{playlist} = $args{playlist} if $args{playlist};
     return $self;
 }
 

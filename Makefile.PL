@@ -16,9 +16,10 @@ WriteMakefile
  AUTHOR	        => 'Johan Vromans <jvromans@squirrel.nl>',
 
  INSTALLDIRS	=> 'site',
- EXE_FILES	=> [ 'script/irealcvt' ],
+ EXE_FILES	=> [ 'script/irealcvt', 'script/splitlist' ],
  PL_FILES	=> {
-		    'script/pp.PL' => [ 'script/irealcvt' ]
+		    'script/pp.PL' => [ 'script/irealcvt' ],
+		    'script/pp.PL' => [ 'script/splitlist' ]
 		   },
 
  PREREQ_PM      => {

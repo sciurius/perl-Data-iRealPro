@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Tue Sep  6 16:09:10 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Tue Sep  6 20:17:48 2016
-# Update Count    : 18
+# Last Modified On: Wed Sep 14 20:46:27 2016
+# Update Count    : 20
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -28,7 +28,7 @@ sub new {
     my $self = bless( { variant => "irealpro" }, $pkg );
 
     for ( qw( trace debug verbose output variant transpose ) ) {
-	$self->{options}->{$_} = $options->{$_} if exists $options->{$_};
+	$self->{$_} = $options->{$_} if exists $options->{$_};
     }
 
     return $self;
