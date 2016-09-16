@@ -12,20 +12,20 @@ WriteMakefile
 (
  NAME		=> 'Data::iRealPro',
  ABSTRACT_FROM  => $master,
- VERSION_FROM	=> $master,
+# VERSION_FROM	=> $master,
+ VERSION	=> '0.08.1',
  AUTHOR	        => 'Johan Vromans <jvromans@squirrel.nl>',
 
  INSTALLDIRS	=> 'site',
  EXE_FILES	=> [ 'script/irealcvt', 'script/splitlist' ],
  PL_FILES	=> {
-		    'script/pp.PL' => [ 'script/irealcvt' ],
-		    'script/pp.PL' => [ 'script/splitlist' ]
+		    'script/pp.PL' => [ 'script/irealcvt',
+					'script/splitlist' ]
 		   },
 
  PREREQ_PM      => {
 		    'PDF::API2'    => 2.020,
 		    'Font::TTF'    => 1.04,
-		    'Imager'	   => 0,
 		    'Data::Struct' => 0,
 		    'Text_CSV::XS' => 0,
 		    'JSON::PP'	   => 0,

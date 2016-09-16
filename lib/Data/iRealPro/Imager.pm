@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Tue Sep  6 20:23:52 2016
-# Update Count    : 1317
+# Last Modified On: Fri Sep  9 20:52:56 2016
+# Update Count    : 1360
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -18,18 +18,32 @@ use utf8;
 
 package Data::iRealPro::Imager;
 
-our $VERSION = "0.04";
+our $VERSION = "0.05";
 
 use Data::iRealPro::URI;
 use Data::iRealPro::Tokenizer;
 use Data::Dumper;
 use Text::CSV_XS;
 use App::Packager;
+use Encode qw( encode_utf8 );
 
 use constant FONTSX => 0;
 
 sub new {
     my ( $pkg, $options ) = @_;
+
+    my $self = bless( { variant => "irealpro" }, $pkg );
+
+    $self->{fontdir} = $ENV{FONTDIR};
+    if ( $App::Packager::PACKAGED ) {
+	$self->{resdir} = App::Packager::GetResourcePath();
+    }
+    else {
+	$self->{resdir} = "$FindBin::Bin/../res";
+    }
+    $self->{fontdir} ||= $self->{resdir} . "/fonts";
+    $self->{fontdir} .= "/";
+    $self->{fontdir} =~ s;/+$;/;;
 
     if ( $options->{npp} ) {
 	if ( $options->{npp} =~ s/-$// ) {
@@ -39,9 +53,10 @@ sub new {
 	    $options->{npp_minor} = 'm';
 	}
 	$options->{npp} = 'straight' unless $options->{npp} eq 'hand';
+	unless ( -s $self->{resdir} . "/prefab/" . $options->{npp} . "/root_c.png" ) {
+	    die( "NPP Image generation not available" );
+	}
     }
-
-    my $self = bless( { variant => "irealpro" }, $pkg );
 
     for ( qw( trace debug verbose output variant transpose toc crop
 	      npp npp_minor
@@ -50,23 +65,15 @@ sub new {
     }
     $self->{npp} ||= 0;
 
-    $self->{fontdir} = $ENV{FONTDIR};
-    if ( $App::Packager::PACKAGED ) {
-	$self->{resdir} = App::Packager::GetResourcePath();
-	$self->{fontdir} ||= $self->{resdir} . "/fonts"
-    }
-    else {
-	$self->{resdir} = "$FindBin::Bin/../res";
-	$self->{fontdir} ||= $self->{resdir} . "/fonts"
-    }
-    $self->{fontdir} .= "/";
-    $self->{fontdir} =~ s;/+$;/;;
     # Scaling (bitmaps only).
-    if ( $options->{scale} && $options->{scale} =~ /^[\d.]+$/ ) {
+    if ( $options->{npp} ) {
+	no warnings 'redefine';
+	eval( "sub scale(\$) { \$_[0] };" );
+    }
+    elsif ( $options->{scale} && $options->{scale} =~ /^[\d.]+$/ ) {
 	no warnings 'redefine';
 	eval( "sub scale(\$) { " . $options->{scale} . "*\$_[0] };" );
     }
-
     return $self;
 }
 
@@ -75,12 +82,12 @@ use constant PAGE_WIDTH  => 595;
 use constant PAGE_HEIGHT => 842;
 
 # NPP operations are done on a fixed canvas. Eventually, the result
-# will be scaled to match the desired output dimensions.
+# will be scaled or split to match the desired output dimensions.
 
 use constant CANVAS_WIDTH  => 1920;
 use constant CANVAS_HEIGHT => 2480;
 
-# Scaling for bitmap graphics to get finer images.
+# Scaling for bitmap graphics to get finer images. Not for NPP.
 sub scale($) { 2*$_[0] };
 
 # Fonts.
@@ -105,12 +112,19 @@ my $red   = "#ff0000";
 
 sub process {
     my ( $self, $u, $options ) = @_;
+    # {{{
 
     my $plname = $u->{playlist}->{name};
+
+    # If it is a playlist, assume multiple songs.
+    # With --output this must be either a PDF, or
+    # contain %d or %t.
     if ( $plname && @{ $u->{playlist}->{songs} } > 1
 	 && !$options->{select}
        ) {
-	if ( $self->{output} && $self->{output} !~ /\.pdf$/i ) {
+	if ( $self->{output}
+	     && $self->{output} !~ /\%\d*[dt]/
+	     && $self->{output} !~ /\.pdf$/i ) {
 	    die("Can only generate PDF for playlist\n");
 	}
 	warn( "PLAYLIST: $plname, ",
@@ -123,36 +137,14 @@ sub process {
     $self->{output} ||= "__new__.pdf";
 
     ( my $outtype = lc($self->{output}) ) =~ s/^.*\.(.+)$/$1/;
+    $self->{outtype} = $outtype;
 
     if ( $outtype eq "pdf" && eval { require PDF::API2 } ) {
 	$self->{pdf} = PDF::API2->new;
 	$self->{pdf}->mediabox( 0, PAGE_HEIGHT, PAGE_WIDTH, 0 );
     }
     elsif ( $outtype =~ /^png|jpg$/ && eval { require Imager } ) {
-	if ( $self->{npp} ) {
-	    no warnings 'redefine';
-	    eval( "sub scale(\$) { \$_[0] };" );
-	    $self->{im} =
-	      Imager->new( xsize => scale(CANVAS_WIDTH),
-			   ysize => scale(CANVAS_HEIGHT),
-			   model => 'rgb',
-			 );
-	    if ( $self->{npp} eq 'hand' ) {
-		$fonts->{titlefont} =
-		  $fonts->{stitlefont} =
-		    $fonts->{textfont} =
-		      "Felt-Regular.ttf";
-	    }
-	}
-	else {
-	    $self->{im} =
-	      Imager->new( xsize => scale(PAGE_WIDTH),
-			   ysize => scale(PAGE_HEIGHT),
-			   model => 'rgb',
-			 );
-	}
-	$self->{im} or die( Imager->errstr );
-
+	# ok
     }
     else {
 	die( "Unsupported output type for ", $self->{output}, "\n" );
@@ -188,7 +180,9 @@ sub process {
 	my $res = $self->decode_song($song->{data});
 	my $mx = $self->make_cells( $song, $res );
 
+	$self->{songix} = $songix;
 	my $numpages = $self->make_image( $song, $mx );
+
 	next unless $outtype eq "pdf" && !$options->{select};
 
 	my $pages = $pageno;
@@ -223,18 +217,7 @@ sub process {
 	    warn( "Wrote: $csv_name\n" ) if $self->{verbose};
 	}
     }
-    elsif ( $outtype =~ /^png|jpg$/ ) {
-	if ( $self->{im}->getheight > CANVAS_HEIGHT ) {
-	    warn("Scaling output...\n");
-	    $self->{im} =
-	      $self->{im}->scale( xpixels => CANVAS_WIDTH,
-				  ypixels => CANVAS_HEIGHT,
-				  type => 'nonprop' );
-	}
-	warn("Writing output...\n");
-	$self->{im}->write( file => $self->{output}, type => $outtype );
-	warn( "Wrote: ", $self->{output}, "\n" ) if $self->{verbose};
-    }
+    # }}}
 }
 
 sub decode_song {
@@ -258,6 +241,7 @@ struct Cell => @fields;
 
 sub make_cells {
     # {{{
+
     my ( $self, $song, $tokens ) = @_;
 
     if ( $self->{debug} ) {
@@ -406,6 +390,7 @@ sub make_cells {
 	warn('$DATA = "', $song->{data}, "\";\n");
     }
     return $cells;
+
     # }}}
 }
 
@@ -453,37 +438,20 @@ sub make_image {
     # {{{
     my ( $self, $song, $cells ) = @_;
 
-    # Create fonts.
-    $self->initfonts;
-
-    my $textfont  = $self->{textfont};
-    my $chordfont = $self->{chordfont};
-    my $chrdfont  = $self->{chrdfont};
-    my $musicfont = $self->{musicfont};
-    my $muscfont  = $self->{muscfont};
-    my $markfont  = $self->{markfont};
-
-    my $musicsize = $self->{musicsize};
-    my $chordsize = $self->{chordsize};
-
-    my $musicglyphs = $self->{musicglyphs};
-
-    my $lm = 40;
-    my $rm = PAGE_WIDTH - $lm;
-    my $bm = PAGE_HEIGHT - 50;
-    my $tm = 172 - 50;
-
-    my $dx = ( $rm - $lm ) / $numcols;
-    my $dy = ( $bm - $tm ) / $numrows;
-    if ( $dy < 1.6*$musicsize ) {
-	$dy = 1.6*$musicsize;
-    }
+    my ( $lm, $tm, $rm, $bm, $dx, $dy );
 
     if ( $self->{npp} ) {
 	$lm = 68;
+	$rm = 0;		# unused
 	$tm = 208;
-	$dx = ( CANVAS_WIDTH - $lm - 18 ) / $numcols;
+	$dx = ( CANVAS_WIDTH - $lm - 18 ) / 16;
 	$dy = 296;
+	if ( $self->{npp} eq 'hand' ) {
+	    $fonts->{titlefont} =
+	      $fonts->{stitlefont} =
+		$fonts->{textfont} =
+		  "Felt-Regular.ttf";
+	}
 
 	# Calculate the required heigth and create the canvas.
 	my $v = $tm;		# top margin
@@ -494,6 +462,42 @@ sub make_image {
 				   ysize => $v,
 				   model => 'rgba',
 				 );
+    }
+    else {
+	$lm = 40;
+	$rm = PAGE_WIDTH - $lm;
+	$bm = PAGE_HEIGHT - 50;
+	$tm = 172 - 50;
+	$dx = ( $rm - $lm ) / $numcols;
+	$dy = ( $bm - $tm ) / $numrows;
+
+	if ( ! $self->{pdf} ) {
+	    $self->{im} =
+	      Imager->new( xsize => scale(PAGE_WIDTH),
+			   ysize => scale(PAGE_HEIGHT),
+			   model => 'rgb',
+			 );
+	}
+    }
+    die("Imager failure")
+      unless $self->{pdf} || $self->{im};
+
+    # Create fonts.
+    $self->initfonts;
+
+    my $textfont  = $self->{textfont};
+    my $chordfont = $self->{chordfont};
+    my $chrdfont  = $self->{chrdfont};
+    my $musicfont = $self->{musicfont};
+    my $muscfont  = $self->{muscfont};
+    my $markfont  = $self->{markfont};
+
+    my $musicglyphs = $self->{musicglyphs};
+    my $musicsize = $self->{musicsize};
+    my $chordsize = $self->{chordsize};
+
+    if ( $dy < 1.6*$musicsize ) {
+	$dy = 1.6*$musicsize;
     }
 
     $self->{pages} = 0;
@@ -537,7 +541,7 @@ sub make_image {
 
     # Process the cells.
     for ( my $i = 0; $i < @$cells; $i++ ) {
-
+	# {{{
 	# onpage is the cell index relative to the current page.
 	# Note that we do not yet support multi-page songs.
 	my $onpage = $i % ( $numrows * $numcols );
@@ -798,9 +802,7 @@ sub make_image {
 	    }
 
 	    my $t = $_;
-####	    $t = "Intro" if $t eq 'i';
 	    $t = "In" if $t eq 'i';
-####	    $t = "Verse" if $t eq 'v';
 	    $t = "V" if $t eq 'v';
 	    $self->textl( $x-0.3*$musicsize, $y-0.9*$musicsize, $t,
 			  0.6*$musicsize, $markfont, $red );
@@ -808,12 +810,60 @@ sub make_image {
 	}
 
 	next;
-
+	# }}}
     }
 
     # Crop excess bottom space.
     if ( $self->{im} && $self->{crop} && $low ) {
 	$self->{im} = $self->{im}->crop( top => 0, height => scale($low) );
+    }
+
+    if ( $self->{outtype} =~ /^png|jpg$/ ) {
+	my $did = 0;
+	if ( $self->{npp} && $self->{im}->getheight > CANVAS_HEIGHT ) {
+	    # Scale or split oversized pages.
+	    if ( 0 ) {
+		warn("Scaling output...\n") if $self->{verbose};
+		$self->{im} =
+		  $self->{im}->scale( xpixels => CANVAS_WIDTH,
+				      ypixels => CANVAS_HEIGHT,
+				      type => 'nonprop' );
+	    }
+	    else {
+		my $x = $self->{im}->getheight;
+		my $y = 0;
+		my $p = 1;
+		while ( $x > 0 ) {
+		    my $im = Imager->new( xsize => CANVAS_WIDTH,
+					  ysize => CANVAS_HEIGHT,
+					  model => 'rgb' );
+		    $im->box( filled => 1 );
+		    $im->paste( src => $self->{im},
+				src_minx => 0, src_miny => $y,
+				src_maxx => CANVAS_WIDTH,
+				src_maxy => $y + CANVAS_HEIGHT );
+		    $x -= CANVAS_HEIGHT;
+		    $y += CANVAS_HEIGHT;
+		    my $of = $self->{output};
+		    $of = sprintf( $of, $self->{songix} ) if $of =~ /\%\d*d/;
+		    $of =~ s/\%t/$song->{title}/e;
+		    $of =~ s/(\.\w+)$/sprintf("-%02d%s",$p,$1)/e;
+		    $im->write( file => encode_utf8($of),
+				type => $self->{outtype} );
+		    warn( "Wrote: $of\n" ) if $self->{verbose};
+		    $p++;
+		}
+		$did++;
+	    }
+	}
+	unless ( $did ) {
+	    my $of = $self->{output};
+	    $of = sprintf( $of, $self->{songix} ) if $of =~ /\%\d*d/;
+	    $of =~ s/\%t/$song->{title}/e;
+	    $self->{im}->write( file => encode_utf8($of),
+				type => $self->{outtype} );
+	    warn( "Wrote: $of\n" ) if $self->{verbose};
+	}
     }
 
     # Return number of pages actually produced.
