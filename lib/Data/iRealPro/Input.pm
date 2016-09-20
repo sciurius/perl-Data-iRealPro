@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Tue Sep  6 16:09:10 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Wed Sep 14 20:46:27 2016
-# Update Count    : 20
+# Last Modified On: Fri Sep 16 13:01:39 2016
+# Update Count    : 21
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -18,9 +18,10 @@ use utf8;
 
 package Data::iRealPro::Input;
 
-our $VERSION = "0.01";
+our $VERSION = "0.02";
 
 use Data::iRealPro::URI;
+use Data::iRealPro::Text;
 
 sub new {
     my ( $pkg, $options ) = @_;
@@ -47,7 +48,6 @@ sub parsedata {
 
     my $u;
     if ( $data =~ /^Song( \d+)?:/ ) {
-	require Data::iRealPro::Text;
 	$u = Data::iRealPro::Text->encode($data);
     }
     else {
