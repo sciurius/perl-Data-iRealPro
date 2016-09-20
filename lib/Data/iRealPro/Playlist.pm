@@ -6,7 +6,7 @@ use Carp;
 
 package Data::iRealPro::Playlist;
 
-our $VERSION = "0.02";
+our $VERSION = "0.03";
 
 use Data::iRealPro::SongData;
 
@@ -47,20 +47,22 @@ sub parse {
 
     # Process the song(s).
     foreach ( @a ) {
+	eval {
 	push( @{ $self->{songs} },
 	      Data::iRealPro::SongData->new( variant => $self->{variant},
 					      data    => $_,
 					      debug   => $self->{debug},
 					    ) );
+        };
+	warn("$@: $_\n") if $@;
     }
-
     return $self;
 }
 
 sub export {
     my ( $self, %args ) = @_;
 
-    my $v = $args{variant} || $self->{variant};
+    my $v = $args{variant} || $self->{variant} || "irealpro";
     my $dashes = $v eq "irealbook" ? "=" : "===";
 
     my $r = join( $dashes,

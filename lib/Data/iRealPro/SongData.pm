@@ -6,7 +6,9 @@ use Carp;
 
 package Data::iRealPro::SongData;
 
-our $VERSION = "0.01";
+our $VERSION = "0.02";
+
+use Encode qw( encode_utf8 );
 
 sub new {
     my ( $pkg, %args ) = @_;
@@ -84,38 +86,45 @@ sub parse {
 sub export {
     my ( $self, %args ) = @_;
 
-    my $v = $args{variant} || $self->{variant};
+    my $v = $args{variant} || $self->{variant} || "irealpro";
+    my $r;
 
     if ( $v eq "irealbook" ) {
-	return join( "=",
-		     $self->{title},
-		     $self->{composer},
-		     $self->{style},
-		     $self->{key},
-		     $self->{a3} || '',
-		     $self->{data},
-		   );
+	$r = join( "=",
+		   $self->{title},
+		   $self->{composer},
+		   $self->{style},
+		   $self->{key},
+		   $self->{a3} || '',
+		   $self->{data},
+		 );
     }
-
-    return join( "=",
-		 $self->{title},
-		 $self->{composer},
-		 $self->{a2} || '',
-		 $self->{style},
-		 $self->{key},
-		 $self->{actual_key} || '',
-		 obfuscate( $self->{data} ),
-		 $self->{actual_style} || '',
-		 $self->{actual_tempo} || 0,
-		 $self->{actual_repeats} || 0,
-	       );
+    else {
+	$r = join( "=",
+		   $self->{title},
+		   $self->{composer},
+		   $self->{a2} || '',
+		   $self->{style},
+		   $self->{key},
+		   $self->{actual_key} || '',
+		   obfuscate( $self->{data} ),
+		   $self->{actual_style} || '',
+		   $self->{actual_tempo} || 0,
+		   $self->{actual_repeats} || 0,
+		 );
+    }
+    if ( $args{html} || $args{uriencode} || !defined( $args{uriencode} ) ) {
+	$r = encode_utf8($r);
+	$r =~ s/([^-_."A-Z0-9a-z*\/\'])/sprintf("%%%02X", ord($1))/ge;
+    }
+    return $r;
 }
 
 # Obfuscate...
 # IN:  [T44C   |G   |C   |G   Z
 # OUT: 1r34LbKcu7[T44CXyQ|GXyQ|CXyQ|GXyQZ
 sub obfuscate {
-    my ( $t ) = @_;
+    my ( $t ) = @_;die unless defined $t;
     for ( $t ) {
 	s/   /XyQ/g;		# obfuscating substitution
 	s/ \|/LZ/g;		# obfuscating substitution
