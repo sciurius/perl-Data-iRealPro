@@ -12,8 +12,7 @@ WriteMakefile
 (
  NAME		=> 'Data::iRealPro',
  ABSTRACT_FROM  => $master,
-# VERSION_FROM	=> $master,
- VERSION	=> '0.08.1',
+ VERSION	=> "$version.2",
  AUTHOR	        => 'Johan Vromans <jvromans@squirrel.nl>',
 
  INSTALLDIRS	=> 'site',
@@ -24,14 +23,14 @@ WriteMakefile
 		   },
 
  PREREQ_PM      => {
-		    'PDF::API2'    => 2.020,
-		    'Font::TTF'    => 1.04,
-		    'Data::Struct' => 0,
-		    'Text_CSV::XS' => 0,
-		    'JSON::PP'	   => 0,
+		    'PDF::API2'    => 2.026,
+		    'Font::TTF'    => 1.06,
+		    'Data::Struct' => 1.701,
+		    'Text_CSV::XS' => 1.19,
+		    'JSON::PP'	   => 2.27300,
 		   },
  TEST_REQUIRES  => {
-		    'Test::More'  => 0,
+		    'Test::More'   => 1.001014,
 		   },
 
  META_MERGE => {
