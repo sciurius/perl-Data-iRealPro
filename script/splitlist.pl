@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Wed Sep 14 18:50:49 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Wed Sep 14 20:49:15 2016
-# Update Count    : 33
+# Last Modified On: Tue Sep 20 14:31:32 2016
+# Update Count    : 36
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -77,6 +77,8 @@ foreach my $file ( @ARGV ) {
 
 	# Write it out.
 	my $title = $song->{title};
+	# Mask dangerous characters.
+	$title =~ s/[:?\\\/*"<>|]/@/g;
 	my $file = $outdir.$title.".html";
 	my $out = encode_utf8($file);
 	open( my $fd, '>:utf8', $out )
