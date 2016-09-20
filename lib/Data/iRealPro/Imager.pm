@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Fri Sep  9 20:52:56 2016
-# Update Count    : 1360
+# Last Modified On: Fri Sep 16 13:04:57 2016
+# Update Count    : 1362
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -15,16 +15,15 @@ use strict;
 use warnings;
 use Carp;
 use utf8;
+use App::Packager;
 
 package Data::iRealPro::Imager;
 
-our $VERSION = "0.05";
+our $VERSION = "0.06";
 
-use Data::iRealPro::URI;
 use Data::iRealPro::Tokenizer;
 use Data::Dumper;
 use Text::CSV_XS;
-use App::Packager;
 use Encode qw( encode_utf8 );
 
 use constant FONTSX => 0;
