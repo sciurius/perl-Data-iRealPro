@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Tue Sep  6 16:21:16 2016
-# Update Count    : 1076
+# Last Modified On: Fri Sep 16 13:00:51 2016
+# Update Count    : 1077
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -18,9 +18,9 @@ use utf8;
 
 package Data::iRealPro::JSON;
 
-our $VERSION = "0.05";
+our $VERSION = "0.06";
 
-use Data::iRealPro::Output;
+use Data::iRealPro::Tokenizer;
 use JSON::PP;
 
 sub new {
