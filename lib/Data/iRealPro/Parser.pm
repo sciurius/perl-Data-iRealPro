@@ -7,7 +7,7 @@ use utf8;
 
 package Data::iRealPro::Parser;
 
-our $VERSION = "0.01";
+our $VERSION = "0.02";
 
 use Data::iRealPro::URI;
 use Data::iRealPro::Tokenizer;
@@ -477,12 +477,4 @@ sub timesig {
     $sigs->{ "$time_d$time_n" } || Carp::croak("Invalid time signature: $time_d/$time_n");
 }
 
-package main;
-
-unless ( caller ) {
-    my $d = Data::iRealPro::Parser->new( debug => 1 );
-    my $data = do { local $/; <> };
-    # Extract URL.
-    $data =~ s;^.*(irealb(?:ook)?://.*?)(?:$|\").*;$1;s;
-    $d->decode_playlist($data);
-}
+1;
