@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Tue Sep  6 16:09:10 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Tue Sep  6 22:19:45 2016
-# Update Count    : 24
+# Last Modified On: Wed Sep 21 21:35:13 2016
+# Update Count    : 26
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -27,7 +27,7 @@ sub new {
 
     my $self = bless( { variant => "irealpro" }, $pkg );
 
-    for ( qw( trace debug verbose output variant transpose npp ) ) {
+    for ( qw( trace debug verbose output variant transpose npp select ) ) {
 	$self->{options}->{$_} = $options->{$_} if exists $options->{$_};
     }
 
@@ -53,7 +53,7 @@ sub processfiles {
 
     foreach my $file ( @files ) {
 	my $u = Data::iRealPro::Input->new($self->{options})->parsefile($file);
-	$be->new($self->{options})->process($u);
+	$be->new($self->{options})->process($u, $self->{options} );
     }
 }
 
