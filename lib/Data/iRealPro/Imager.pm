@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Fri Sep 16 13:04:57 2016
-# Update Count    : 1362
+# Last Modified On: Tue Sep 27 09:57:41 2016
+# Update Count    : 1366
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -45,6 +45,8 @@ sub new {
     $self->{fontdir} =~ s;/+$;/;;
 
     if ( $options->{npp} ) {
+	die( "Unsupported output type for NPP. Please select PNG or JPG.\n")
+	  unless $options->{output} =~ /\.(jpg|png)$/i;
 	if ( $options->{npp} =~ s/-$// ) {
 	    $options->{npp_minor} = '';
 	}
@@ -58,7 +60,7 @@ sub new {
     }
 
     for ( qw( trace debug verbose output variant transpose toc crop
-	      npp npp_minor
+	      npp npp_minor select
 	   ) ) {
 	$self->{$_} = $options->{$_} if exists $options->{$_};
     }
@@ -821,7 +823,7 @@ sub make_image {
 	my $did = 0;
 	if ( $self->{npp} && $self->{im}->getheight > CANVAS_HEIGHT ) {
 	    # Scale or split oversized pages.
-	    if ( 0 ) {
+	    if ( 1 ) {
 		warn("Scaling output...\n") if $self->{verbose};
 		$self->{im} =
 		  $self->{im}->scale( xpixels => CANVAS_WIDTH,
