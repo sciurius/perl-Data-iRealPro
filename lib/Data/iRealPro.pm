@@ -11,7 +11,7 @@ Data::iRealPro - Convert iRealBook/iRealPro data
 
 =cut
 
-our $VERSION = '0.09';
+our $VERSION = '0.10';
 
 =head1 SYNOPSIS
 
@@ -19,6 +19,7 @@ our $VERSION = '0.09';
   irealcvt iRealPro_exported.html --output formatted.png
   irealcvt iRealPro_exported.html --output raw.json
   irealcvt iRealPro_exported.html --output editable.txt
+  irealcvt iRealPro_exported.html --output importable.html
 
 =head1 DESCRIPTION
 

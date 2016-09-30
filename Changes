@@ -1,5 +1,20 @@
 Revision history for Data-iRealPro
 
+0.10	2016-09-30
+
+	Add HTML backend.
+	(ireal) Repeats do not default to 1, but 3.
+	(Imager) Improve options handling.
+	(Output) Improve options handling.
+
+0.09	2016-09-20
+
+	Improve URI exports.
+	(Makefile) Add versions for requirements.
+	(splitlist) Mask dangerous characters.
+	(Imager, Text, JSON) Fix requires.
+	(Parser) Remove debugging code.
+
 0.08.1	2016-09-16
 
 	Make Imager an optional dependency.
@@ -12,8 +27,10 @@ Revision history for Data-iRealPro
 	Add 'splitlist' tool.
 
 0.06.1  2016-01-01
+
 	Add PAR packaging.
 
 0.06    2016-01-01
-        First CPAN release.
+
+	First CPAN release.
 

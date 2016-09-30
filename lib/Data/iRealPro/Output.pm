@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Tue Sep  6 16:09:10 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Wed Sep 21 21:35:13 2016
-# Update Count    : 26
+# Last Modified On: Fri Sep 30 20:39:43 2016
+# Update Count    : 32
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -27,8 +27,31 @@ sub new {
 
     my $self = bless( { variant => "irealpro" }, $pkg );
 
-    for ( qw( trace debug verbose output variant transpose npp select ) ) {
-	$self->{options}->{$_} = $options->{$_} if exists $options->{$_};
+    # Common options.
+    for ( qw( trace debug verbose output variant transpose select ) ) {
+	$self->{options}->{$_} = $options->{$_}
+	  if exists $options->{$_};
+    }
+
+    if ( $self->{options}->{output} =~ /\.jso?n$/i ) {
+	require Data::iRealPro::JSON;
+	$self->{_backend} = Data::iRealPro::JSON::;
+    }
+    elsif ( $self->{options}->{output} =~ /\.txt$/i ) {
+	require Data::iRealPro::Text;
+	$self->{_backend} = Data::iRealPro::Text::;
+    }
+    elsif ( $self->{options}->{output} =~ /\.html$/i ) {
+	require Data::iRealPro::HTML;
+	$self->{_backend} = Data::iRealPro::HTML::;
+    }
+    else {
+	require Data::iRealPro::Imager;
+	$self->{_backend} = Data::iRealPro::Imager::;
+	for ( qw( npp ) ) {
+	    $self->{options}->{$_} = $options->{$_}
+	      if exists $options->{$_};
+	}
     }
 
     return $self;
@@ -37,23 +60,11 @@ sub new {
 sub processfiles {
     my ( $self, @files ) = @_;
 
-    my $be;
-    if ( $self->{options}->{output} =~ /\.jso?n$/i ) {
-	require Data::iRealPro::JSON;
-	$be = Data::iRealPro::JSON::;
-    }
-    elsif ( $self->{options}->{output} =~ /\.txt$/i ) {
-	require Data::iRealPro::Text;
-	$be = Data::iRealPro::Text::;
-    }
-    else {
-	require Data::iRealPro::Imager;
-	$be = Data::iRealPro::Imager::;
-    }
-
     foreach my $file ( @files ) {
-	my $u = Data::iRealPro::Input->new($self->{options})->parsefile($file);
-	$be->new($self->{options})->process($u, $self->{options} );
+	my $u = Data::iRealPro::Input->new($self->{options})
+	  ->parsefile($file);
+	$self->{_backend}->new($self->{options})
+	  ->process($u, $self->{options} );
     }
 }
 

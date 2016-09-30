@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Tue Sep  6 22:28:55 2016
-# Update Count    : 64
+# Last Modified On: Fri Sep 30 20:45:48 2016
+# Update Count    : 65
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -184,7 +184,7 @@ Usage: $0 [ options ] [ ... ]
     --output=XXX	Desired output file name.
 			File name extension controls the output type.
 			Supported types: json (raw data), txt (editable text),
-			pdf and png.
+			html, pdf and png.
     --select=NN		Select a single song from a playlist.
     --npp=XXX		Near pixel-perfect iRealPro output.
 			Choose 'hand' or 'standard'.
