@@ -3,8 +3,8 @@
 # Author          : Johan Vromans
 # Created On      : Thu Mar 12 12:30:00 2015
 # Last Modified By: Johan Vromans
-# Last Modified On: Sun Sep  4 21:03:49 2016
-# Update Count    : 64
+# Last Modified On: Fri Sep 30 12:23:18 2016
+# Update Count    : 66
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -95,7 +95,7 @@ if ( $data =~ s;^.*(irealb(?:ook)?://.*?)(?:$|\").*;$1;s ) {
 			$s->{key} ? ( "; key: ", $s->{key} ) : (),
 			$s->{actual_tempo}
 			? ( "; tempo: ", $s->{actual_tempo} ) : (),
-			$s->{actual_repeats} && $s->{actual_repeats} > 1
+			$s->{actual_repeats} 
 			? ( "; repeat: ", $s->{actual_repeats} ) : (),
 		      ),
 		cooked => neatify( $s->{data} ),
@@ -150,6 +150,7 @@ else {
 	key	     => $tv->{key}      || "C",
 	actual_tempo => $tv->{actual_tempo}    || "0",
 	actual_style => $tv->{actual_style} || "",
+	actual_repeats => $tv->{actual_repeats} || 3,
      );
     $song->{data} = yfitaen($data);
 

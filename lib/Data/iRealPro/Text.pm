@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Tue Sep  6 14:58:26 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Tue Sep  6 22:19:08 2016
-# Update Count    : 50
+# Last Modified On: Fri Sep 30 12:24:24 2016
+# Update Count    : 51
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -69,7 +69,7 @@ sub process {
 			$s->{key} ? ( "; key: ", $s->{key} ) : (),
 			$s->{actual_tempo}
 			? ( "; tempo: ", $s->{actual_tempo} ) : (),
-			$s->{actual_repeats} && $s->{actual_repeats} > 1
+			$s->{actual_repeats}
 			? ( "; repeat: ", $s->{actual_repeats} ) : (),
 		      ),
 		cooked => neatify( $s->{data} ),
