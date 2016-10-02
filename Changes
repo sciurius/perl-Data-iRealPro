@@ -1,5 +1,19 @@
 Revision history for Data-iRealPro
 
+0.11	2016-10-02
+
+	Rework the entanglement of the URI, Playlist and Song
+	components.
+	Rename SongData module to Song.
+	Variants will be phased out. 'irealb' (irealpro) is standard.
+	However, 'irealbook' as input will be  supported as usual.
+	Deprecate the export methods of these components in favour of
+	the much cleaner 'as_string' methods.
+	Enhance the irealcvt program with HTML splitting and listing,
+	and automatically combining of multiple input files.
+	Fix a problem with the CGI backend and playlists.
+	Package App::Packager for convenience.
+
 0.10	2016-09-30
 
 	Add HTML backend.

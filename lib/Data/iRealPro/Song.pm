@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Carp;
 
-package Data::iRealPro::SongData;
+package Data::iRealPro::Song;
 
 our $VERSION = "0.02";
 
@@ -83,8 +83,26 @@ sub parse {
     return $self;
 }
 
+sub as_string {
+    my ( $self ) = @_;
+
+    join( "=",
+	  $self->{title},
+	  $self->{composer},
+	  $self->{a2}                 || '',
+	  $self->{style},
+	  $self->{key},
+	  $self->{actual_key}         || '',
+	  obfuscate( $self->{data} ),
+	  $self->{actual_style}       || '',
+	  $self->{actual_tempo}       || 0,
+	  $self->{actual_repeats}     || 0,
+	);
+}
+
 sub export {
     my ( $self, %args ) = @_;
+    carp(__PACKAGE__."::export is deprecated, please use 'as_string' instead");
 
     my $v = $args{variant} || $self->{variant} || "irealpro";
     my $r;
@@ -100,18 +118,7 @@ sub export {
 		 );
     }
     else {
-	$r = join( "=",
-		   $self->{title},
-		   $self->{composer},
-		   $self->{a2} || '',
-		   $self->{style},
-		   $self->{key},
-		   $self->{actual_key} || '',
-		   obfuscate( $self->{data} ),
-		   $self->{actual_style} || '',
-		   $self->{actual_tempo} || 0,
-		   $self->{actual_repeats} || 0,
-		 );
+	$r = $self->as_string;
     }
     if ( $args{html} || $args{uriencode} || !defined( $args{uriencode} ) ) {
 	$r = encode_utf8($r);

@@ -6,6 +6,7 @@
 # Backends.
 use Data::iRealPro::Input;
 use Data::iRealPro::Output;
+use Data::iRealPro::HTML;
 use Data::iRealPro::Imager;
 use Data::iRealPro::JSON;
 use Data::iRealPro::Text;

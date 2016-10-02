@@ -4,12 +4,13 @@ my @modules;
 
 BEGIN {
     @modules = 	( 'Data::iRealPro',
-		  'Data::iRealPro::SongData',
+		  'Data::iRealPro::Song',
 		  'Data::iRealPro::Tokenizer',
 		  'Data::iRealPro::Playlist',
 		  'Data::iRealPro::URI',
 		  'Data::iRealPro::Parser',
 		  'Data::iRealPro::Imager',
+		  'Data::iRealPro::HTML',
 		  'Data::iRealPro::JSON',
 		  'Data::iRealPro::Text',
 		  'Data::iRealPro::Input',

@@ -3,8 +3,8 @@
 # Author          : Johan Vromans
 # Created On      : Tue Mar  3 11:09:45 2015
 # Last Modified By: Johan Vromans
-# Last Modified On: Sun Oct  2 21:10:32 2016
-# Update Count    : 330
+# Last Modified On: Sun Oct  2 21:20:05 2016
+# Update Count    : 332
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -22,12 +22,12 @@ $ENV{FONTDIR} = "../fonts";
 
 use Template::Tiny;
 use Data::iRealPro::URI;
-use Data::iRealPro::SongData;
+use Data::iRealPro::Song;
 use Data::iRealPro::Imager;
 use Data::iRealPro::Input;
 
 my $my_package = "Sciurix";
-my ($my_name, $my_version) = qw( iRealPro/Web 0.04 );
+my ($my_name, $my_version) = qw( iRealPro/Web 0.05 );
 
 print "Content-Type: text/html\n\n";
 
@@ -133,7 +133,7 @@ foreach my $s ( @{ $u->{playlist}->{songs} } ) {
 		    $s->{a2}
 		    ? ( "; a2: ", $s->{a2} ) : (),
 		    $s->{actual_key}
-		    ? ( "; actual key: ", Data::iRealPro::SongData->actual_key($s->{actual_key}) ) : (),
+		    ? ( "; actual key: ", Data::iRealPro::Song->actual_key($s->{actual_key}) ) : (),
 		  ),
 	    cooked => $s->{data},
 	    rows => 10,

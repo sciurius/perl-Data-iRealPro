@@ -48,19 +48,19 @@ sub parse {
     return $self;
 }
 
+sub as_string {
+    my ( $self ) = @_;
+
+    "irealb://" . $self->{playlist}->as_string;
+}
+
 sub export {
     my ( $self, %args ) = @_;
-
+    carp(__PACKAGE__."::export is deprecated, please use 'as_string' instead");
     my $v = $args{variant} || $self->{variant} || "irealpro";
     $args{uriencode} //= !$args{plain};
-    my $r = encode_utf8( $self->{playlist}->export( %args ) );
 
-#    if ( $args{html} || $args{uriencode} || !defined( $args{uriencode} ) ) {
-#	$r =~ s/([^-_."A-Z0-9a-z*\/\'])/sprintf("%%%02X", ord($1))/ge;
-#    }
-
-    my $uri = $v eq "irealbook" ? "$v://$r" : "irealb://$r";
-
+    my $uri = $self->as_string(%args);
     return $uri unless $args{html};
 
     my $title;

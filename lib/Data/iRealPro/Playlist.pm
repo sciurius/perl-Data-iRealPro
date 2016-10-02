@@ -8,7 +8,7 @@ package Data::iRealPro::Playlist;
 
 our $VERSION = "0.03";
 
-use Data::iRealPro::SongData;
+use Data::iRealPro::Song;
 
 sub new {
     my ( $pkg, %args ) = @_;
@@ -49,18 +49,34 @@ sub parse {
     foreach ( @a ) {
 	eval {
 	push( @{ $self->{songs} },
-	      Data::iRealPro::SongData->new( variant => $self->{variant},
-					      data    => $_,
-					      debug   => $self->{debug},
-					    ) );
+	      Data::iRealPro::Song->new( variant => $self->{variant},
+					 data    => $_,
+					 debug   => $self->{debug},
+				       ) );
         };
 	warn("$@: $_\n") if $@;
     }
     return $self;
 }
 
+sub songs {
+    my ( $self, $song ) = @_;
+    $self->{songs};
+}
+
+sub add_song {
+    my ( $self, $song ) = @_;
+    push( @{ $self->{songs} }, $song );
+}
+
+sub add_songs {
+    my ( $self, $songs ) = @_;
+    push( @{ $self->{songs} }, @$songs );
+}
+
 sub export {
     my ( $self, %args ) = @_;
+    carp(__PACKAGE__."::export is deprecated, please use 'as_string' instead");
 
     my $v = $args{variant} || $self->{variant} || "irealpro";
     my $dashes = $v eq "irealbook" ? "=" : "===";
@@ -69,6 +85,24 @@ sub export {
 		  map { $_->export( %args ) } @{ $self->{songs} } );
 
     $r .= $dashes . $self->{name} if defined $self->{name};
+
+    return $r;
+}
+
+sub as_string {
+    my ( $self ) = @_;
+
+    my $dashes = "===";
+
+    my $r = join( $dashes,
+		  map { $_->as_string } @{ $self->{songs} } );
+
+    my $name = $self->{name};
+    if ( !$name && @{ $self->{songs} } > 1 ) {
+	carp("Playlist without name in as_string");
+	$name = "NoName";
+    }
+    $r .= $dashes . $name if $name;
 
     return $r;
 }

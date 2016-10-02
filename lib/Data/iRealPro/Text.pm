@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Tue Sep  6 14:58:26 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Fri Sep 30 12:24:24 2016
-# Update Count    : 51
+# Last Modified On: Sun Oct  2 21:20:27 2016
+# Update Count    : 63
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -22,14 +22,14 @@ our $VERSION = "0.01";
 
 use Data::iRealPro::URI;
 use Data::iRealPro::Playlist;
-use Data::iRealPro::SongData;
+use Data::iRealPro::Song;
 
 sub new {
     my ( $pkg, $options ) = @_;
 
     my $self = bless( { variant => "irealpro" }, $pkg );
 
-    for ( qw( trace debug verbose output variant transpose ) ) {
+    for ( qw( trace debug verbose output variant transpose select list ) ) {
 	$self->{$_} = $options->{$_} if exists $options->{$_};
     }
 
@@ -42,6 +42,8 @@ sub process {
     $self->{output} ||= "__new__.txt";
 
     my $pl;
+    my $list = $self->{list};
+    my $select = $self->{select};
 
     if ( defined $u->{playlist}->{name} ) {
 	$pl = $u->{playlist}->{name} || "<NoName>";
@@ -57,6 +59,10 @@ sub process {
 	push( @songs,
 	      { index => $song,
 		title =>
+		$list
+		?
+		  sprintf("%4d: %s (%s)", $song, $s->{title}, "@t" )
+		:
 		  join( "",
 			( $song > 1 || $pl ) ? "Song $song: " : "Song: ",
 			$s->{title},
@@ -76,13 +82,26 @@ sub process {
 	      } );
     }
 
-    open( my $fd, ">:utf8", $self->{output} )
-      or die( "Cannot create ", $self->{output}, " [$!]\n" );
-    select($fd);
+    if ( $self->{output} eq "-" ) {
+	binmode( STDOUT, ':utf8' );
+    }
+    else {
+	open( my $fd, ">:utf8", $self->{output} )
+	  or die( "Cannot create ", $self->{output}, " [$!]\n" );
+	select($fd);
+    }
 
     my $res;
+    print( "Playlist: $pl\n" ) if $list && $pl;
     foreach my $song ( @songs ) {
 	$res = $song->{title} . "\n";
+	if ( $list ) {
+	    print($res);
+	    next;
+	}
+	if ( $select && $song->{index} != $select ) {
+	    next;
+	}
 	$res .= $song->{subtitle} . "\n";
 	$res .= "Playlist: " . $pl . "\n" if $pl;
 	$res .= "\n";
@@ -216,7 +235,7 @@ sub encode_song {
     $data =~ s/^.*?\n\n//s;
 
     # Build the song...
-    my $song = Data::iRealPro::SongData->new
+    my $song = Data::iRealPro::Song->new
       ( variant	       => $variant,
 	title	       => $tv->{title},
 	composer       => $tv->{composer}       || "Composer",
