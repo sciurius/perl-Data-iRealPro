@@ -3,7 +3,6 @@ MANIFEST
 Makefile.PL
 README
 script/irealcvt.pl
-script/splitlist.pl
 script/pp.PL
 lib/App/Packager.pm
 lib/Data/iRealPro.pm
