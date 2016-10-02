@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Sun Oct  2 22:10:36 2016
-# Update Count    : 86
+# Last Modified On: Sun Oct  2 22:59:30 2016
+# Update Count    : 89
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -140,6 +140,7 @@ sub app_setup {
 	  # Standard options.
 	  'ident'		=> \$ident,
 	  'help|h|?'		=> \$help,
+	  'man'			=> \$man,
 	  'verbose',
 	  'trace',
 	  'debug',
@@ -192,13 +193,14 @@ irealcvt [options] file [...]
 			HTML files. Use --dir to control where the
 			files will be written.
     --dir=XXX		Specifies the result directory for --split.
-    --npp=[hand|standard]	Near pixel-perfect iRealPro output.
+    --npp=[hand|standard]	Near pixel-perfect output.
     --transpose=[+-]NN  -x	Transpose up/down semitones.
     --[no]toc		Produces [suppresses] the table of contents.
 
 Miscellaneous options:
 
     --help  -h		this message
+    --man		full documentation
     --ident		show identification
     --verbose		verbose information
 

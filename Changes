@@ -1,5 +1,9 @@
 Revision history for Data-iRealPro
 
+0.12	2016-10-02
+
+	Fix --man command line option.
+
 0.11	2016-10-02
 
 	Rework the entanglement of the URI, Playlist and Song
