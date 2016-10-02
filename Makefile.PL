@@ -33,8 +33,9 @@ WriteMakefile
 		    'Test::More'   => 1.001014,
 		   },
 
+ LICENSE => 'perl',
  META_MERGE => {
-     license          => "perl_5",
+     'meta-spec' => { version => 2 },
      resources        => {
 	 repository   => {
 	     type => 'git',
