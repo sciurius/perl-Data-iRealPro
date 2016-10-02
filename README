@@ -20,7 +20,7 @@ irealbook format.
 Data::iRealPro provides a set of modules that can be used to read and
 analyse iRealPro songs in URL format and convert them into something
 readable, like PDF or PNG, or raw JSON data. A ready-to-use program
-iRealPro is provided to perform conversions on the command line.
+irealcvt program is provided to perform conversions on the command line.
 
 I have hesitated a long time to release this module, since it contains
 code to reverse the obfuscation iRealPro uses to hide the file
@@ -56,7 +56,6 @@ You can also look for information at:
 
     Search CPAN
         http://search.cpan.org/dist/Data-iRealPro
-
 
 COPYRIGHT AND LICENCE
 
