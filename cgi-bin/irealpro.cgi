@@ -3,8 +3,8 @@
 # Author          : Johan Vromans
 # Created On      : Tue Mar  3 11:09:45 2015
 # Last Modified By: Johan Vromans
-# Last Modified On: Wed Sep  7 14:42:51 2016
-# Update Count    : 328
+# Last Modified On: Sun Oct  2 21:10:32 2016
+# Update Count    : 330
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -93,7 +93,8 @@ my @songs;
 foreach my $s ( @{ $u->{playlist}->{songs} } ) {
     $song++;
 
-    my $image = "tmp/ir$$.png";
+    # Make output names unique per song.
+    my $image = sprintf( "tmp/ir%ds%d.png", $$, $song );
     my $options = { output => $image, scale => 1.4, crop => 1 };
 
     # Re-package the song in a playlist.
