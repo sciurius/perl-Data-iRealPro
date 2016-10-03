@@ -1,5 +1,9 @@
 Revision history for Data-iRealPro
 
+0.13.1	2016-10-03
+
+	Fix Text::CSV_XS requirement (packaging only).
+
 0.13	2016-10-03
 
 	Restructure frontends and backends.
