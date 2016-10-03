@@ -1,12 +1,12 @@
 #! perl
 
-# Data::iRealPro::JSON -- parse iRealPro data and produce JSON
+# Data::iRealPro::Output::JSON -- parse iRealPro data and produce JSON
 
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Fri Sep 16 13:00:51 2016
-# Update Count    : 1077
+# Last Modified On: Mon Oct  3 08:39:05 2016
+# Update Count    : 1078
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -16,24 +16,14 @@ use warnings;
 use Carp;
 use utf8;
 
-package Data::iRealPro::JSON;
+package Data::iRealPro::Output::JSON;
+
+use parent qw( Data::iRealPro::Output::Base );
 
 our $VERSION = "0.06";
 
 use Data::iRealPro::Tokenizer;
 use JSON::PP;
-
-sub new {
-    my ( $pkg, $options ) = @_;
-
-    my $self = bless( { variant => "irealpro" }, $pkg );
-
-    for ( qw( trace debug verbose output variant transpose ) ) {
-	$self->{$_} = $options->{$_} if exists $options->{$_};
-    }
-
-    return $self;
-}
 
 sub process {
     my ( $self, $u, $options ) = @_;

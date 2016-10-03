@@ -6,10 +6,12 @@
 # Backends.
 use Data::iRealPro::Input;
 use Data::iRealPro::Output;
-use Data::iRealPro::HTML;
-use Data::iRealPro::Imager;
-use Data::iRealPro::JSON;
-use Data::iRealPro::Text;
+use Data::iRealPro::Input::Text;
+use Data::iRealPro::Output::Base;
+use Data::iRealPro::Output::HTML;
+use Data::iRealPro::Output::Imager;
+use Data::iRealPro::Output::JSON;
+use Data::iRealPro::Output::Text;
 
 # Conditional requires for D::i::Imager.
 use PDF::API2;

@@ -1,12 +1,12 @@
 #! perl
 
-# iReal2pdf -- print iRealPro songs
+# Data::iRealPro::Output::Imager - produce images for iRealPro songs
 
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Tue Sep 27 09:57:41 2016
-# Update Count    : 1366
+# Last Modified On: Mon Oct  3 14:19:13 2016
+# Update Count    : 1374
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -17,7 +17,9 @@ use Carp;
 use utf8;
 use App::Packager;
 
-package Data::iRealPro::Imager;
+package Data::iRealPro::Output::Imager;
+
+use parent qw( Data::iRealPro::Output::Base );
 
 our $VERSION = "0.06";
 
@@ -76,6 +78,11 @@ sub new {
 	eval( "sub scale(\$) { " . $options->{scale} . "*\$_[0] };" );
     }
     return $self;
+}
+
+sub options {
+    my $self = shift;
+    [ @{ $self->SUPER::options }, qw( transpose npp ) ];
 }
 
 # A4 image format.
@@ -178,8 +185,7 @@ sub process {
 	warn( sprintf("Song %3d: %s\n", $songix, $song->{title}) )
 	  if $self->{verbose};
 	push( @book, [ $song->{title}, $pageno ] );
-	my $res = $self->decode_song($song->{data});
-	my $mx = $self->make_cells( $song, $res );
+	my $mx = $self->decode_song($song);
 
 	$self->{songix} = $songix;
 	my $numpages = $self->make_image( $song, $mx );
@@ -222,178 +228,31 @@ sub process {
 }
 
 sub decode_song {
-    my ( $self, $str ) = @_;
+    my ( $self, $song ) = @_;
 
-    # Build the tokens array. This reflects as precisely as possible
-    # the contents of the pure data string.
-    my $tokens = Data::iRealPro::Tokenizer->new
+    my $t = Data::iRealPro::Tokenizer->new
       ( debug   => $self->{debug},
 	variant => $self->{variant},
 	transpose => $self->{transpose},
-      )->tokenize($str);
+      );
 
-    return $tokens;
-}
-
-use Data::Struct;
-
-my @fields = qw( vs sz chord subchord text mark sign time lbar rbar alt );
-struct Cell => @fields;
-
-sub make_cells {
-    # {{{
-
-    my ( $self, $song, $tokens ) = @_;
-
+    # Build the tokens array. This reflects as precisely as possible
+    # the contents of the pure data string.
+    my $tokens = $t->tokenize($song->{data});
     if ( $self->{debug} ) {
-	warn(Dumper($song));
 	warn(Dumper($tokens));
     }
 
-    my $cells = [];
-    my $cell;
-    my $chordsize = 0;		# normal
-    my $vspace = 0;		# normal
-
-    my $new_cell = sub {
-	$cell = struct "Cell";
-	$cell->sz = $chordsize if $chordsize;
-	$cell->vs = $vspace if $vspace;
-	push( @$cells, $cell );
-    };
-
-    my $new_measure = sub {
-	@$cells >= 2 and $cells->[-2]->rbar ||= "barlineSingle";
-	$cells->[-1]->lbar ||= "barlineSingle";
-    };
-
-    $new_cell->();		# TODO section? measure?
-
-    foreach my $t ( @$tokens ) {
-
-	if ( $t eq "start section" ) {
-	    $cell->lbar = "barlineDouble";
-	    next;
-	}
-
-	if ( $t eq "start repeat" ) {
-	    $cell->lbar = "repeatLeft";
-	    next;
-	}
-
-	if ( $t eq "end repeat" ) {
-	    $cells->[-2]->rbar = "repeatRight";
-	    next;
-	}
-
-	if ( $t =~ /time (\d+)\/(\d+)/ ) {
-	    $cell->time = [ $1, $2 ];
-	    next;
-	}
-
-	if ( $t =~ /^hspace\s+(\d+)$/ ) {
-	    $new_cell->() for 1..$1;
-	    next;
-	}
-
-	# |Bh7 E7b9 ZY|QA- |
-	if ( $t eq "vspace" ) {
-	    $vspace++;
-	    $cells->[-1]->vs = $vspace;
-	    next;
-	}
-
-	if ( $t eq "end" ) {
-	    $cells->[-2]->rbar = "barlineFinal";
-	    next;
-	}
-
-	if ( $t eq "end section" ) {
-	    $cells->[-2]->rbar = "barlineDouble";
-	    next;
-	}
-
-	if ( $t eq "bar" ) {
-	    $new_measure->();
-	    next;
-	}
-
-	if ( $t =~ /^(segno|coda|fermata)$/ ) {
-	    $cell->sign = $1;
-	    next;
-	}
-
-	if ( $t =~ /^chord\s+(.*)$/ ) {
-	    my $c = $1;
-
-	    if ( $c =~ s/\((.+)\)// ) {
-		if ( $c ) {
-		    $cell->subchord = $1;
-		}
-		else {
-		    $cells->[-2]->subchord = $1;
-		    next;
-		}
-	    }
-
-	    $cell->chord = $c;
-	    $new_cell->();
-	    next;
-	}
-
-	if ( $t =~ /^alternative\s+(\d)$/ ) {
-	    $cell->alt = $1;
-	}
-
-	if ( $t eq "small" ) {
-	    $cell->sz = $chordsize = 1;
-	    next;
-	}
-
-	if ( $t eq "large" ) {
-	    $cell->sz = $chordsize = 0;
-	    next;
-	}
-
-	if ( $t =~ /^mark (.)/ ) {
-	    $cell->mark = $1;
-	    next;
-	}
-
-	if ( $t =~ /^text\s+(\d+)\s(.*)/ ) {
-	    $cell->text =  [ $1, $2 ];
-	    next;
-	}
-
-	if ( $t =~ /^advance\s+(\d+)$/ ) {
-	    $new_cell->() for 1..$1;
-	    next;
-	}
-
-	if ( $t =~ /^measure repeat (single|double)$/ ) {
-	    my $c = $1 eq "single" ? "repeat1Bar" : "repeat2Bars";
-	    $cell->chord = $c;
-	    $new_cell->();
-	    next;
-	}
-
-	if ( $t =~ /^slash repeat$/ ) {
-	    $cell->chord = "repeatSlash";
-	    $new_cell->();
-	    next;
-	}
-
-	next;
-
-    }
+    # Then create array of cells.
+    my $cells = $t->make_cells( $song, $tokens );
     if ( $self->{debug} ) {
 	warn Dumper($cells);
 	warn('$DATA = "', $song->{data}, "\";\n");
     }
-    return $cells;
 
-    # }}}
+    $cells;
 }
+
 
 my %smufl =
   ( brace		=> "\x{e000}",

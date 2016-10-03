@@ -5,7 +5,9 @@ use warnings;
 use Carp;
 use utf8;
 
-package Data::iRealPro::Parser;
+package Data::iRealPro::Output::LilyPond;
+
+use parent qw( Data::iRealPro::Output::Base );
 
 our $VERSION = "0.02";
 
@@ -15,6 +17,7 @@ use Data::Dumper;
 
 sub new {
     my ( $pkg, %args ) = @_;
+    Carp::croak(__PACKAGE__ . " is not yet functional!");
     bless { variant => "irealpro", %args }, $pkg;
 }
 

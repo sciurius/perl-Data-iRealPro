@@ -1,12 +1,12 @@
 #! perl
 
-# Data::iRealPro::HTML -- produce iRealPro HTML data
+# Data::iRealPro::Output::HTML -- produce iRealPro HTML data
 
 # Author          : Johan Vromans
 # Created On      : Fri Sep 30 19:36:29 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Sun Oct  2 21:21:37 2016
-# Update Count    : 35
+# Last Modified On: Mon Oct  3 08:33:56 2016
+# Update Count    : 43
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -16,7 +16,9 @@ use warnings;
 use Carp;
 use utf8;
 
-package Data::iRealPro::HTML;
+package Data::iRealPro::Output::HTML;
+
+use parent qw( Data::iRealPro::Output::Base );
 
 our $VERSION = "0.01";
 
@@ -24,35 +26,30 @@ use Data::iRealPro::URI;
 use Data::iRealPro::Playlist;
 use Encode qw( encode_utf8 );
 use HTML::Entities;
+use File::Path qw( make_path );
 
-sub new {
-    my ( $pkg, $options ) = @_;
-
-    my $self = bless( { variant => "irealpro" }, $pkg );
-
-    for ( qw( trace debug verbose output variant transpose split dir ) ) {
-	$self->{options}->{$_} = $options->{$_} if exists $options->{$_};
-    }
-
-    return $self;
+sub options {
+    my $self = shift;
+    [ @{ $self->SUPER::options }, qw( split dir ) ];
 }
 
 sub process {
     my ( $self, $u, $options ) = @_;
 
-    unless ( $self->{options}->{split} ) {
+    unless ( $self->{split} ) {
 
-	$self->{options}->{output} ||= "__new__.html";
+	$self->{output} ||= "__new__.html";
 
-	open( my $fd, ">:utf8", $self->{options}->{output} )
-	  or croak( "Cannot create ", $self->{options}->{output}, " [$!]\n" );
+	open( my $fd, ">:utf8", $self->{output} )
+	  or croak( "Cannot create ", $self->{output}, " [$!]\n" );
 	print $fd to_html($u);
 	close($fd);
 	return;
     }
 
-    my $outdir = $self->{options}->{dir} || "";
+    my $outdir = $self->{dir} || "";
     $outdir .= "/" if $outdir && $outdir !~ m;/$;;
+    make_path( $outdir, {} ) unless -d $outdir;
 
     foreach my $song ( @{ $u->{playlist}->{songs} } ) {
 
@@ -73,7 +70,7 @@ sub process {
 	print $fd to_html($uri);
 	close($fd);
 	warn( "Wrote $out\n" )
-	  if $self->{options}->{verbose};
+	  if $self->{verbose};
     }
 }
 
@@ -134,7 +131,7 @@ EOD
 	$html .= "  </ol>\n";
     }
     else {
-	$html .= qq{  <p><a href="@{[ _enc($u->as_string) ]}" target=\"_blank\">$title</a></p>\n};
+	$html .= qq{  <p><a href="irealb://@{[ _esc($pl->as_string) ]}" target=\"_blank\">$title</a></p>\n};
     }
 
     $html .= <<EOD;

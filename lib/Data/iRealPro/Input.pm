@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Tue Sep  6 16:09:10 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Fri Sep 16 13:01:39 2016
-# Update Count    : 21
+# Last Modified On: Mon Oct  3 08:26:19 2016
+# Update Count    : 23
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -21,7 +21,7 @@ package Data::iRealPro::Input;
 our $VERSION = "0.02";
 
 use Data::iRealPro::URI;
-use Data::iRealPro::Text;
+use Data::iRealPro::Input::Text;
 
 sub new {
     my ( $pkg, $options ) = @_;
@@ -48,7 +48,7 @@ sub parsedata {
 
     my $u;
     if ( $data =~ /^Song( \d+)?:/ ) {
-	$u = Data::iRealPro::Text->encode($data);
+	$u = Data::iRealPro::Inpput::Text->encode($data);
     }
     else {
 	# Extract URL.

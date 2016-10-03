@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Tue Sep  6 16:09:10 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Sun Oct  2 00:16:47 2016
-# Update Count    : 62
+# Last Modified On: Mon Oct  3 09:16:50 2016
+# Update Count    : 66
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -29,40 +29,29 @@ sub new {
     my $self = bless( { variant => "irealpro" }, $pkg );
     my $opts;
 
-    # Common options.
-    for ( qw( trace debug verbose output variant transpose
-	      select playlist ) ) {
-	$opts->{$_} = $options->{$_} if exists $options->{$_};
-    }
-
-    $opts->{output} ||= "";
+    $opts->{output} = $options->{output} || "";
     if ( $options->{list}
 	 || $opts->{output} =~ /\.txt$/i ) {
-	require Data::iRealPro::Text;
-	$self->{_backend} = Data::iRealPro::Text::;
-	for ( qw( list ) ) {
-	    $opts->{$_} = $options->{$_} if exists $options->{$_};
-	}
+	require Data::iRealPro::Output::Text;
+	$self->{_backend} = Data::iRealPro::Output::Text::;
 	$opts->{output} ||= "-";
     }
     elsif ( $opts->{output} =~ /\.jso?n$/i ) {
-	require Data::iRealPro::JSON;
-	$self->{_backend} = Data::iRealPro::JSON::;
+	require Data::iRealPro::Output::JSON;
+	$self->{_backend} = Data::iRealPro::Output::JSON::;
     }
     elsif ( $options->{split}
 	    || $opts->{output} =~ /\.html$/i ) {
-	require Data::iRealPro::HTML;
-	$self->{_backend} = Data::iRealPro::HTML::;
-	for ( qw( split dir ) ) {
-	    $opts->{$_} = $options->{$_} if exists $options->{$_};
-	}
+	require Data::iRealPro::Output::HTML;
+	$self->{_backend} = Data::iRealPro::Output::HTML::;
     }
     else {
-	require Data::iRealPro::Imager;
-	$self->{_backend} = Data::iRealPro::Imager::;
-	for ( qw( npp ) ) {
-	    $opts->{$_} = $options->{$_} if exists $options->{$_};
-	}
+	require Data::iRealPro::Output::Imager;
+	$self->{_backend} = Data::iRealPro::Output::Imager::;
+    }
+
+    for ( @{ $self->{_backend}->options } ) {
+	$opts->{$_} = $options->{$_} if exists $options->{$_};
     }
 
     $self->{options} = $opts;

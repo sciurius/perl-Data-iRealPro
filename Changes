@@ -1,5 +1,13 @@
 Revision history for Data-iRealPro
 
+0.13	2016-10-03
+
+	Restructure frontends and backends.
+	Move backends to Output directory.
+	Move frontends to Input directory.
+	Move make_cells from Imager to Tokenizer.
+	Obsolete Parser (rename to Output/LilyPond).
+
 0.12	2016-10-02
 
 	Fix --man command line option.
