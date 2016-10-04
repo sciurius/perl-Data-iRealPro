@@ -3,6 +3,8 @@
 # Ease the life of the CPAN testers.
 exit 0 if $ENV{AUTOMATED_TESTING} && $] < 5.010000;
 
+require 5.010;
+
 use ExtUtils::MakeMaker;
 
 my $master = 'lib/Data/iRealPro.pm';
@@ -12,7 +14,7 @@ WriteMakefile
 (
  NAME		=> 'Data::iRealPro',
  ABSTRACT_FROM  => $master,
- VERSION	=> "$version",
+ VERSION	=> "$version.1",
  AUTHOR	        => 'Johan Vromans <jvromans@squirrel.nl>',
 
  INSTALLDIRS	=> 'site',
@@ -27,6 +29,7 @@ WriteMakefile
 		    'Data::Struct' => 1.701,
 		    'Text::CSV_XS' => 1.19,
 		    'JSON::PP'	   => 2.27300,
+		    'HTML::Entities' => 3.72,
 		   },
  TEST_REQUIRES  => {
 		    'Test::More'   => 1.001014,
