@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Sep 30 19:36:29 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Mon Oct  3 08:33:56 2016
-# Update Count    : 43
+# Last Modified On: Tue Oct  4 12:46:17 2016
+# Update Count    : 49
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -38,12 +38,17 @@ sub process {
 
     unless ( $self->{split} ) {
 
-	$self->{output} ||= "__new__.html";
+	$self->{output} ||= $options->{output} || "__new__.html";
 
-	open( my $fd, ">:utf8", $self->{output} )
-	  or croak( "Cannot create ", $self->{output}, " [$!]\n" );
-	print $fd to_html($u);
-	close($fd);
+	if ( ref( $self->{output} ) ) {
+	    ${ $self->{output} } = to_html($u);
+	}
+	else {
+	    open( my $fd, ">:utf8", $self->{output} )
+	      or croak( "Cannot create ", $self->{output}, " [$!]\n" );
+	    print $fd to_html($u);
+	    close($fd);
+	}
 	return;
     }
 
@@ -113,7 +118,7 @@ sub to_html {
 EOD
 
     if ( $pl->{name} || @{ $pl->{songs} } > 1 ) {
-	$html .= "  <p><a href=\"irealb://" . _esc($pl->as_string) .
+	$html .= "  <p><a href=\"" . $u->as_string(1) .
 	  "\" target=\"_blank\">(All songs)</a></p>\n  <ol>\n";
 	foreach my $s ( @{ $pl->{songs} } ) {
 	    my @c = split(' ', $s->{composer});
@@ -131,7 +136,7 @@ EOD
 	$html .= "  </ol>\n";
     }
     else {
-	$html .= qq{  <p><a href="irealb://@{[ _esc($pl->as_string) ]}" target=\"_blank\">$title</a></p>\n};
+	$html .= qq{  <p><a href="@{[ $u->as_string(1) ]}" target=\"_blank\">$title</a></p>\n};
     }
 
     $html .= <<EOD;
@@ -142,10 +147,7 @@ EOD
 }
 
 sub _esc {
-    # We must encode first before the uri-escape.
-    my $t = encode_utf8($_[0]);
-    $t =~ s/([^-_."A-Z0-9a-z*\/\'])/sprintf("%%%02X", ord($1))/ge;
-    return $t;
+    goto \&Data::iRealPro::URI::esc;
 }
 
 sub _html {

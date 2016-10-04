@@ -5,7 +5,6 @@ my @modules;
 BEGIN {
     @modules = 	( 'Data::iRealPro',
 		  'Data::iRealPro::Song',
-		  'Data::iRealPro::Tokenizer',
 		  'Data::iRealPro::Playlist',
 		  'Data::iRealPro::URI',
 		  'Data::iRealPro::Output::Imager',

@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Mon Oct  3 08:39:05 2016
-# Update Count    : 1078
+# Last Modified On: Tue Oct  4 12:47:40 2016
+# Update Count    : 1083
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -20,15 +20,14 @@ package Data::iRealPro::Output::JSON;
 
 use parent qw( Data::iRealPro::Output::Base );
 
-our $VERSION = "0.06";
+our $VERSION = "0.07";
 
-use Data::iRealPro::Tokenizer;
 use JSON::PP;
 
 sub process {
     my ( $self, $u, $options ) = @_;
 
-    $self->{output} ||= "__new__.json";
+    $self->{output} ||= $options->{output} || "__new__.json";
 
     my $json = JSON::PP->new->utf8(1)->pretty->indent->canonical;
     $json->allow_blessed->convert_blessed;
@@ -41,7 +40,7 @@ sub process {
     };
 
     # Process the song(s).
-    my @goners = qw( variant debug a2 data );
+    my @goners = qw( variant debug a2 data raw_tokens cells );
     for my $item ( $u, $u->{playlist} ) {
 	delete( $item->{$_} ) for @goners;
     }
@@ -50,27 +49,18 @@ sub process {
 	$songix++;
 	warn( sprintf("Song %3d: %s\n", $songix, $song->{title}) )
 	  if $self->{verbose};
-	$song->{tokens} = $self->decode_song($song->{data});
+	$song->tokens;
 	delete( $song->{$_} ) for @goners;
     }
-    open( my $fd, ">:utf8", $self->{output} )
-      or die( "Cannot create ", $self->{output}, " [$!]\n" );
-    $fd->print( $json->encode($u) );
-    $fd->close;
-}
-
-sub decode_song {
-    my ( $self, $str ) = @_;
-
-    # Build the tokens array. This reflects as precisely as possible
-    # the contents of the pure data string.
-    my $tokens = Data::iRealPro::Tokenizer->new
-      ( debug   => $self->{debug},
-	variant => $self->{variant},
-	transpose => $self->{transpose},
-      )->tokenize($str);
-
-    return $tokens;
+    if ( ref( $self->{output} ) ) {
+	${ $self->{output} } = $json->encode($u);
+    }
+    else {
+	open( my $fd, ">:utf8", $self->{output} )
+	  or die( "Cannot create ", $self->{output}, " [$!]\n" );
+	$fd->print( $json->encode($u) );
+	$fd->close;
+    }
 }
 
 1;

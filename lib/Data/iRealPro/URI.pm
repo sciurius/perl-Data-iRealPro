@@ -49,9 +49,13 @@ sub parse {
 }
 
 sub as_string {
-    my ( $self ) = @_;
+    my ( $self, $uriesc ) = @_;
 
-    "irealb://" . $self->{playlist}->as_string;
+    my $s = $self->{playlist}->as_string;
+    if ( $uriesc ) {
+	$s = esc($s);
+    }
+    "irealb://" . $s;
 }
 
 sub export {
@@ -126,6 +130,13 @@ EOD
 </body>
 </html>
 EOD
+}
+
+sub esc {
+    # We must encode first before the uri-escape.
+    my $t = encode_utf8($_[0]);
+    $t =~ s/([^-_."A-Z0-9a-z*\/\'])/sprintf("%%%02X", ord($1))/ge;
+    return $t;
 }
 
 1;

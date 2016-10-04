@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Mon Oct  3 08:13:17 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Mon Oct  3 09:16:25 2016
-# Update Count    : 18
+# Last Modified On: Tue Oct  4 13:53:12 2016
+# Update Count    : 19
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -35,7 +35,7 @@ sub new {
 sub options {
     # The list of options this backend can handle.
     # Note that 'output' is handled by Output.pm.
-    [ qw( trace debug verbose variant playlist ) ]
+    [ qw( trace debug verbose variant playlist select ) ]
 }
 
 1;

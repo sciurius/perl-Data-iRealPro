@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Tue Oct  4 08:07:54 2016
-# Update Count    : 1376
+# Last Modified On: Tue Oct  4 13:52:46 2016
+# Update Count    : 1381
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -23,7 +23,6 @@ use parent qw( Data::iRealPro::Output::Base );
 
 our $VERSION = "0.07";
 
-use Data::iRealPro::Tokenizer;
 use Data::Dumper;
 use Text::CSV_XS;
 use Encode qw( encode_utf8 );
@@ -230,21 +229,15 @@ sub process {
 sub decode_song {
     my ( $self, $song ) = @_;
 
-    my $t = Data::iRealPro::Tokenizer->new
-      ( debug   => $self->{debug},
-	variant => $self->{variant},
-	transpose => $self->{transpose},
-      );
-
-    # Build the tokens array. This reflects as precisely as possible
+    # Get the tokens array. This reflects as precisely as possible
     # the contents of the pure data string.
-    my $tokens = $t->tokenize($song->{data});
     if ( $self->{debug} ) {
+	my $tokens = $song->tokens;
 	warn(Dumper($tokens));
     }
 
     # Then create array of cells.
-    my $cells = $t->make_cells( $tokens );
+    my $cells = $song->cells;
     if ( $self->{debug} ) {
 	warn Dumper($cells);
 	warn('$DATA = "', $song->{data}, "\";\n");

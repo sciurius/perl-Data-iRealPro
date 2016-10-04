@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Tue Sep  6 14:58:26 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Mon Oct  3 08:37:52 2016
-# Update Count    : 68
+# Last Modified On: Tue Oct  4 13:19:12 2016
+# Update Count    : 74
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -34,7 +34,7 @@ sub options {
 sub process {
     my ( $self, $u, $options ) = @_;
 
-    $self->{output} ||= "__new__.txt";
+    $self->{output} ||= $options->{output} || "__new__.txt";
 
     my $pl;
     my $list = $self->{list};
@@ -77,21 +77,11 @@ sub process {
 	      } );
     }
 
-    if ( $self->{output} eq "-" ) {
-	binmode( STDOUT, ':utf8' );
-    }
-    else {
-	open( my $fd, ">:utf8", $self->{output} )
-	  or die( "Cannot create ", $self->{output}, " [$!]\n" );
-	select($fd);
-    }
-
-    my $res;
-    print( "Playlist: $pl\n" ) if $list && $pl;
+    my $res = "";
+    $res .= "Playlist: $pl\n" if $list && $pl;
     foreach my $song ( @songs ) {
-	$res = $song->{title} . "\n";
+	$res .= $song->{title} . "\n";
 	if ( $list ) {
-	    print($res);
 	    next;
 	}
 	if ( $select && $song->{index} != $select ) {
@@ -101,10 +91,22 @@ sub process {
 	$res .= "Playlist: " . $pl . "\n" if $pl;
 	$res .= "\n";
 	$res .= $song->{cooked} . "\n";
-	print( $res, "\n" );
+	$res .= "\n";
     }
 
-    close;
+    if ( ref( $self->{output} ) ) {
+	${ $self->{output} } = $res;
+    }
+    elsif ( $self->{output} eq "-" ) {
+	binmode( STDOUT, ':utf8' );
+	print $res;
+    }
+    else {
+	open( my $fd, ">:utf8", $self->{output} )
+	  or die( "Cannot create ", $self->{output}, " [$!]\n" );
+    	print( $res, "\n" );
+	close($fd);
+    }
 }
 
 sub neatify {
@@ -134,25 +136,6 @@ sub neatify1 {
     $t =~ s/_ +$/_/mg;
     $t =~ s/\n+$/\n/;
 
-    return $t;
-}
-
-sub yfitaen {
-    my ( $t ) = @_;
-    my @a = split( /(\<.*?\>)/, $t );
-    $t = "";
-    while ( @a > 1 ) {
-	$t .= yfitaen1(shift(@a)) . shift(@a);
-    }
-    $t .= yfitaen1(shift(@a)) if @a;
-    return $t;
-}
-
-sub yfitaen1 {
-    my ( $t ) = @_;
-    # Indeed, the reverse of neatify. And a bit easier.
-    $t =~ s/\s+//g;
-    $t =~ s/_/ /g;
     return $t;
 }
 

@@ -3,8 +3,8 @@
 # Author          : Johan Vromans
 # Created On      : Tue Mar  3 11:09:45 2015
 # Last Modified By: Johan Vromans
-# Last Modified On: Sun Oct  2 21:20:05 2016
-# Update Count    : 332
+# Last Modified On: Tue Oct  4 13:43:06 2016
+# Update Count    : 333
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -23,7 +23,7 @@ $ENV{FONTDIR} = "../fonts";
 use Template::Tiny;
 use Data::iRealPro::URI;
 use Data::iRealPro::Song;
-use Data::iRealPro::Imager;
+use Data::iRealPro::Output::Imager;
 use Data::iRealPro::Input;
 
 my $my_package = "Sciurix";
@@ -111,7 +111,7 @@ foreach my $s ( @{ $u->{playlist}->{songs} } ) {
       );
 
     # Generate image.
-    Data::iRealPro::Imager->new($options)->process($uri);
+    Data::iRealPro::Output::Imager->new($options)->process($uri);
 
     push( @songs,
 	  { index => $song,

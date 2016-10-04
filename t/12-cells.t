@@ -1,6 +1,6 @@
 #!perl -T
 
-use Test::More tests => 7;
+use Test::More tests => 9;
 
 BEGIN {
     use_ok( 'Data::iRealPro::URI' );
@@ -15,10 +15,7 @@ EOD
 
 $u->parse($data);
 ok( $u->{playlist}, "Got playlist" );
-
 my $pl = $u->{playlist};
-is( $pl->{variant}, 'irealpro', "Variant" );
-ok( $pl->{songs}, "Got songs" );
 is( scalar(@{$pl->{songs}}), 1, "Got one song" );
 my $song = $pl->{songs}->[0];
 
@@ -31,20 +28,20 @@ my $dd = <<EOD;
 EOD
 chomp($dd);
 
-my $exp =
-  {
-   a2		   => '',
-   actual_key	   => '',
-   actual_repeats  => 0,
-   actual_style	   => '',
-   actual_tempo	   => 155,
-   composer	   => "Twain Shania",
-   data		   => $dd,
-   debug	   => undef,
-   key		   => "C",
-   style	   => "Rock Ballad",
-   title	   => "You're Still The One",
-   variant	   => "irealpro",
-  };
+my $cells = $song->cells;
+ok( $song->{cells}, "Got cells" );
+is( scalar(@$cells), 75, "Got all cells" );
 
-is_deeply( $song, $exp, "Parsed" );
+# Check some random cells.
+
+is_deeply( $cells->[0], { 'chord' => 'D',
+			  'time' => [ '4', '4' ],
+			  'lbar' => 'repeatLeft',
+			  'mark' => 'i' },
+	   "Cell #0 {T44*iD" );
+
+is_deeply( $cells->[58], { }, "Cell #58 (empty)" );
+
+is_deeply( $cells->[64], { 'rbar' => 'barlineDouble',
+			   'text' => [ '0', 'D.S. al Coda' ] },
+	   "Cell #64 D.S. al Coda ||" );

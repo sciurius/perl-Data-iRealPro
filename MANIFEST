@@ -17,7 +17,6 @@ lib/Data/iRealPro/Output/JSON.pm
 lib/Data/iRealPro/Output/Text.pm
 lib/Data/iRealPro/Playlist.pm
 lib/Data/iRealPro/Song.pm
-lib/Data/iRealPro/Tokenizer.pm
 lib/Data/iRealPro/URI.pm
 res/fonts/BravuraCn.ttf
 res/fonts/Bravura.ttf
@@ -29,7 +28,17 @@ t/00-load.t
 t/01-cpan.t
 t/02-cpan.t
 t/10-uri.t
+t/11-tokens.t
+t/12-cells.t
+t/15-string.t
+t/16-input.t
+t/17-text.t
+t/18-inputs.t
+t/20-json.t
+t/21-html.t
+t/22-html.t
+t/23-text.t
+t/24-text.t
 pp/Makefile.lnx
 pp/Makefile.msw
 pp/irealcvt.pp
-

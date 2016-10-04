@@ -12,7 +12,6 @@ use parent qw( Data::iRealPro::Output::Base );
 our $VERSION = "0.02";
 
 use Data::iRealPro::URI;
-use Data::iRealPro::Tokenizer;
 use Data::Dumper;
 
 sub new {
@@ -33,27 +32,13 @@ sub decode_playlist {		# or single song
 
     # Process the song(s).
     foreach my $song ( @{ $u->{playlist}->{songs} } ) {
-	my $res = $self->decode_song($song->{data});
-	$self->interpret( $song, $res );
+	$self->interpret($song);
     }
 }
 
-sub decode_song {
-    my ( $self, $str ) = @_;
-
-    # Build the tokens array. This reflects as precisely as possible
-    # the contents of the pure data string.
-    my $tokens = Data::iRealPro::Tokenizer->new
-      ( debug   => $self->{debug},
-	variant => $self->{variant},
-      )->tokenize($str);
-
-    return $tokens;
-}
-
 sub interpret {
-    my ( $self, $song, $tokens ) = @_;
-
+    my ( $self, $song ) = @_;
+    my $tokens = $song->tokens;
     my $res = { tokens => [ @$tokens ],
 		content => [] };
 
