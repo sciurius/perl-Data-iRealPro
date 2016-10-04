@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Mon Oct  3 14:19:13 2016
-# Update Count    : 1374
+# Last Modified On: Tue Oct  4 08:07:54 2016
+# Update Count    : 1376
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -21,7 +21,7 @@ package Data::iRealPro::Output::Imager;
 
 use parent qw( Data::iRealPro::Output::Base );
 
-our $VERSION = "0.06";
+our $VERSION = "0.07";
 
 use Data::iRealPro::Tokenizer;
 use Data::Dumper;
@@ -244,7 +244,7 @@ sub decode_song {
     }
 
     # Then create array of cells.
-    my $cells = $t->make_cells( $song, $tokens );
+    my $cells = $t->make_cells( $tokens );
     if ( $self->{debug} ) {
 	warn Dumper($cells);
 	warn('$DATA = "', $song->{data}, "\";\n");
@@ -1044,7 +1044,7 @@ sub initfonts {
 	$self->{titlesize} = 87;
 	$self->{stitlesize} = 77;
 	# Text is slightly wider??
-	use Imager::Matrix2d;
+	require Imager::Matrix2d;
 	# Don't scale the titlefont as well :)
 	my $ff = $self->{fontdir} . $fonts->{textfont};
 	$self->{textfont} = Imager::Font->new( file => $ff);
