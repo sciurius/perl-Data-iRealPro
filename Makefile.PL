@@ -14,7 +14,7 @@ WriteMakefile
 (
  NAME		=> 'Data::iRealPro',
  ABSTRACT_FROM  => $master,
- VERSION	=> "$version.1",
+ VERSION	=> "$version",
  AUTHOR	        => 'Johan Vromans <jvromans@squirrel.nl>',
 
  INSTALLDIRS	=> 'site',
@@ -29,12 +29,13 @@ WriteMakefile
 		    'Data::Struct' => 1.701,
 		    'Text::CSV_XS' => 1.19,
 		    'JSON::PP'	   => 2.27300,
-		    'HTML::Entities' => 3.72,
+		    'HTML::Entities' => 3.69,
 		   },
- TEST_REQUIRES  => {
+ BUILD_REQUIRES  => {
 		    'Test::More'   => 1.001014,
 		   },
 
+ MIN_PERL_VERSION => '5.010000',
  LICENSE => 'perl',
  META_MERGE => {
      'meta-spec' => { version => 2 },

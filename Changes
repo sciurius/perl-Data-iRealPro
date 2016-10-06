@@ -1,5 +1,10 @@
 Revision history for Data-iRealPro
 
+0.16	2016-10-06
+
+	(Makefile.PL) Fix TEST_REQUIRES. Add PERL_MIN_VERSION.
+	Fix Imager problem with jpg output (it's jpeg).
+
 0.15.1	2016-10-04
 
 	Fix HTML::Entities requirement.
