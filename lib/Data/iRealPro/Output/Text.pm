@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Tue Sep  6 14:58:26 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Tue Oct  4 13:19:12 2016
-# Update Count    : 74
+# Last Modified On: Thu Oct  6 21:37:22 2016
+# Update Count    : 76
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -20,7 +20,7 @@ package Data::iRealPro::Output::Text;
 
 use parent qw( Data::iRealPro::Output::Base );
 
-our $VERSION = "0.01";
+our $VERSION = "0.02";
 
 use Data::iRealPro::URI;
 use Data::iRealPro::Playlist;
@@ -104,7 +104,7 @@ sub process {
     else {
 	open( my $fd, ">:utf8", $self->{output} )
 	  or die( "Cannot create ", $self->{output}, " [$!]\n" );
-    	print( $res, "\n" );
+    	print $fd ( $res, "\n" );
 	close($fd);
     }
 }

@@ -1,5 +1,14 @@
 Revision history for Data-iRealPro
 
+0.17	2016-10-06
+
+	Add regression testing (GitHub only, not in the CPAN distribution).
+	(Input) Take the first URI, not the last, from HTML.
+	(HTML) Suppress version number when regression testing.
+	(Imager) Only consider playlists with more than one song to be
+	a playlist. Do not write a CSV for single-song playlists.
+	(Text) Fix stdandard output error.
+
 0.16	2016-10-06
 
 	(Makefile.PL) Fix TEST_REQUIRES. Add PERL_MIN_VERSION.

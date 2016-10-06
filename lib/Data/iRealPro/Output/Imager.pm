@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Thu Oct  6 10:39:05 2016
-# Update Count    : 1395
+# Last Modified On: Thu Oct  6 21:53:15 2016
+# Update Count    : 1402
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -21,16 +21,13 @@ package Data::iRealPro::Output::Imager;
 
 use parent qw( Data::iRealPro::Output::Base );
 
-our $VERSION = "0.07";
+our $VERSION = "0.08";
 
 use Data::Dumper;
 use Text::CSV_XS;
 use Encode qw( encode_utf8 );
 
 use constant FONTSX => 0;
-
-my $regtest = defined($ENV{PERL_HASH_SEED}) && $ENV{PERL_HASH_SEED} == 0;
-my $faketime = 1465041600;	# for regtest
 
 sub new {
     my ( $pkg, $options ) = @_;
@@ -101,14 +98,14 @@ use constant CANVAS_HEIGHT => 2480;
 sub scale($) { 2*$_[0] };
 
 # Fonts.
-my $_default_font = $regtest ? "FreeSans.ttf" : "DroidSans.ttf";
+my $_default_font = "DroidSans.ttf";
 #my $_default_font = "DroidSansAll.ttf";
 my $fonts =
   {
     titlefont => $_default_font,
     stitlefont => $_default_font,
     textfont  => $_default_font,
-    markfont  => $regtest ? "FreeSans.ttf" : "DroidSans-Bold.ttf",
+    markfont  => "DroidSans-Bold.ttf",
     # Normal and condensed versions
     chordfont => "Myriad-CnSemibold.ttf",
     chrdfont  => "Myriad-UcnSemibold.ttf",
@@ -151,7 +148,6 @@ sub process {
 
     if ( $outtype eq "pdf" && eval { require PDF::API2 } ) {
 	$self->{pdf} = PDF::API2->new;
-	$self->{pdf}->{forcecompress} = 0 if $regtest;
 	$self->{pdf}->mediabox( 0, PAGE_HEIGHT, PAGE_WIDTH, 0 );
     }
     elsif ( $outtype =~ /^png|jpg$/ && eval { require Imager } ) {
@@ -166,7 +162,9 @@ sub process {
     my $csv;
     my $csv_fd;
     my $csv_name;
-    if ( $outtype eq "pdf" && !$options->{select} ) {
+    if ( $outtype eq "pdf"
+	 && @{ $u->{playlist}->{songs} } > 1
+	 && !$options->{select} ) {
 	$csv_name = $self->{output};
 	$csv_name =~ s/\.pdf$/.csv/i;
 	open( $csv_fd, ">:encoding(utf8)", $csv_name );
@@ -193,7 +191,7 @@ sub process {
 	$self->{songix} = $songix;
 	my $numpages = $self->make_image( $song, $mx );
 
-	next unless $outtype eq "pdf" && !$options->{select};
+	next unless $csv_fd;
 
 	my $pages = $pageno;
 	if ( $numpages > 1 ) {
@@ -1030,11 +1028,6 @@ sub initfonts {
 	    unless ( $fontcache{$ff} ) {
 		unless ( $fontcache{$ff} ) {
 		    my $f = $self->{pdf}->ttfont( $ff );
-		    if ( $regtest ) {
-			$f->{Name}->{val} =~ s/~\d+/~$faketime/;
-			$f->{ToUnicode}->{CMapName}->{val} =~ s/~\d+/~$faketime/;
-			$f->{ToUnicode}->{CIDSystemInfo}->{Registry}->{val} =~ s/~\d+/~$faketime/;
-		    }
 		    $fontcache{$ff} = $f;
 		}
 		warn( "$ff: ", $fontcache{$ff}->glyphNum, " glyphs\n" )

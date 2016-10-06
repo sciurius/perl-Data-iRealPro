@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Tue Sep  6 16:09:10 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Tue Oct  4 13:41:02 2016
-# Update Count    : 28
+# Last Modified On: Thu Oct  6 21:35:29 2016
+# Update Count    : 30
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -18,7 +18,7 @@ use utf8;
 
 package Data::iRealPro::Input;
 
-our $VERSION = "0.02";
+our $VERSION = "0.03";
 
 use Data::iRealPro::URI;
 use Data::iRealPro::Input::Text;
@@ -67,7 +67,7 @@ sub parsedata {
     }
     else {
 	# Extract URL.
-	$data =~ s;^.*(irealb(?:ook)?://.*?)(?:$|\").*;$1;s;
+	$data =~ s;^.*?(irealb(?:ook)?://.*?)(?:$|\").*;$1;s;
 	$data = "irealbook://" . $data
 	  unless $data =~ m;^(irealb(?:ook)?://.*?);;
 
