@@ -6,7 +6,9 @@ default : dirs generate compare
 
 export IRP_REGTEST=1
 
-generate:
+generate : basic selections
+
+basic :
 	${CVT} Test_Page.html -o out/Test_Page.html
 	${CVT} Test_Page.html -o out/Test_Page.txt
 	${CVT} ref/Test_Page.txt -o out/Test_Page.txt.html
@@ -24,6 +26,11 @@ generate:
 	echo "No NPP testing"; \
 	rm -f ref/Test_Page?.jpg; \
 	fi
+
+selections :
+	${CVT} ref/Test_Pages.html Song1.html ref/Test_Pages.html --list -o out/sel1.lst
+	${CVT} ref/Test_Pages.html Song1.html ref/Test_Pages.html --select=0 --list -o out/sel2.lst
+	${CVT} ref/Test_Pages.html Song1.html ref/Test_Pages.html --select=3 -o out/sel3.html
 
 compare :
 	@touch out/.ok

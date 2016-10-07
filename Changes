@@ -1,5 +1,9 @@
 Revision history for Data-iRealPro
 
+0.18	2016-10-07
+
+	Move combining and selecting to Input handler.
+
 0.17	2016-10-06
 
 	Add regression testing (GitHub only, not in the CPAN distribution).

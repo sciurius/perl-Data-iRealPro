@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Tue Sep  6 14:58:26 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Thu Oct  6 21:37:22 2016
-# Update Count    : 76
+# Last Modified On: Fri Oct  7 08:28:03 2016
+# Update Count    : 78
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -28,7 +28,7 @@ use Data::iRealPro::Song;
 
 sub options {
     my $self = shift;
-    [ @{ $self->SUPER::options }, qw( select list ) ];
+    [ @{ $self->SUPER::options }, qw( list ) ];
 }
 
 sub process {
@@ -38,7 +38,6 @@ sub process {
 
     my $pl;
     my $list = $self->{list};
-    my $select = $self->{select};
 
     if ( defined $u->{playlist}->{name} ) {
 	$pl = $u->{playlist}->{name} || "<NoName>";
@@ -82,9 +81,6 @@ sub process {
     foreach my $song ( @songs ) {
 	$res .= $song->{title} . "\n";
 	if ( $list ) {
-	    next;
-	}
-	if ( $select && $song->{index} != $select ) {
 	    next;
 	}
 	$res .= $song->{subtitle} . "\n";

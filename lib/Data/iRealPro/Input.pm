@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Tue Sep  6 16:09:10 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Thu Oct  6 21:35:29 2016
-# Update Count    : 30
+# Last Modified On: Fri Oct  7 09:52:15 2016
+# Update Count    : 45
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -18,18 +18,23 @@ use utf8;
 
 package Data::iRealPro::Input;
 
-our $VERSION = "0.03";
+our $VERSION = "0.04";
 
 use Data::iRealPro::URI;
 use Data::iRealPro::Input::Text;
+use Encode qw ( decode_utf8 );
 
 sub new {
     my ( $pkg, $options ) = @_;
 
     my $self = bless( { variant => "irealpro" }, $pkg );
 
-    for ( qw( trace debug verbose output variant transpose ) ) {
+    for ( qw( trace debug verbose output variant transpose select ) ) {
 	$self->{$_} = $options->{$_} if exists $options->{$_};
+    }
+
+    for ( qw( playlist ) ) {
+	$self->{$_} = decode_utf8($options->{$_}) if exists $options->{$_};
     }
 
     return $self;
@@ -40,14 +45,34 @@ sub parsefile {
 
     open( my $fd, '<:utf8', $file ) or die("$file: $!\n");
     my $data = do { local $/; <$fd> };
-    $self->parsedata($data);
+    my $u = $self->parsedata($data);
+    $u->{playlist}->{name} = $self->{playlist} if $self->{playlist};
+    return $u;
+}
+
+sub parsefiles {
+    my ( $self, @files ) = @_;
+
+    my $all;
+    foreach my $file ( @files ) {
+	my $u = $self->parsefile($file);
+	unless ( $all ) {
+	    $all = $u;
+	}
+	else {
+	    $all->{playlist}->add_songs( $u->{playlist}->songs );
+	}
+    }
+
+    $all->{playlist}->{name} = $self->{playlist} if $self->{playlist};
+    $self->apply_selection($all);
 }
 
 sub parsedata {
     my ( $self, $data ) = @_;
 
+    my $all;
     if ( eval { $data->[0] } ) {
-	my $all;
 	foreach my $d ( @$data ) {
 	    my $u = $self->parsedata($d);
 	    if ( $all ) {
@@ -58,23 +83,46 @@ sub parsedata {
 		$all->{playlist}->{name} ||= "NoName";
 	    }
 	}
-	return $all;
+	$all->{playlist}->{name} = $self->{playlist} if $self->{playlist};
+	$self->apply_selection($all);
     }
 
-    my $u;
-    if ( $data =~ /^Song( \d+)?:/ ) {
-	$u = Data::iRealPro::Input::Text->encode($data);
+    else {
+	if ( $data =~ /^Song( \d+)?:/ ) {
+	    $all = Data::iRealPro::Input::Text->encode($data);
+	}
+	else {
+	    # Extract URL.
+	    $data =~ s;^.*?(irealb(?:ook)?://.*?)(?:$|\").*;$1;s;
+	    $data = "irealbook://" . $data
+	      unless $data =~ m;^(irealb(?:ook)?://.*?);;
+
+	    $all = Data::iRealPro::URI->new( data => $data,
+					     debug => $self->{debug} );
+	}
+    }
+
+    $all->{playlist}->{name} = $self->{playlist} if $self->{playlist};
+    return $all;
+}
+
+# Since input can be collected from different sources in spearate calls,
+# we need to apply a selection manually.
+
+sub apply_selection {
+    my ( $self, $u ) = @_;
+
+    my $i = $self->{select};
+    return $u unless $i;
+
+    if ( $i > 0 && $i <= @{ $u->{playlist}->songs } ) {
+	$u->{playlist}->{songs} =
+	  [ $u->{playlist}->songs->[$i-1] ];
+	$u->{playlist}->{name} = "";
     }
     else {
-	# Extract URL.
-	$data =~ s;^.*?(irealb(?:ook)?://.*?)(?:$|\").*;$1;s;
-	$data = "irealbook://" . $data
-	  unless $data =~ m;^(irealb(?:ook)?://.*?);;
-
-	$u = Data::iRealPro::URI->new( data => $data,
-				       debug => $self->{debug} );
+	Carp::croak("Invalid value in select");
     }
-
     return $u;
 }
 

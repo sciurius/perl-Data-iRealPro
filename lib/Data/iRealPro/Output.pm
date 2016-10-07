@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Tue Sep  6 16:09:10 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Mon Oct  3 09:16:50 2016
-# Update Count    : 66
+# Last Modified On: Fri Oct  7 09:50:21 2016
+# Update Count    : 72
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -18,10 +18,10 @@ use utf8;
 
 package Data::iRealPro::Output;
 
-our $VERSION = "0.01";
+our $VERSION = "0.02";
 
 use Data::iRealPro::Input;
-use Encode qw (decode_utf8 );
+use Encode qw ( decode_utf8 );
 
 sub new {
     my ( $pkg, $options ) = @_;
@@ -62,20 +62,7 @@ sub processfiles {
     my ( $self, @files ) = @_;
     my $opts = $self->{options};
 
-    my $all;
-    foreach my $file ( @files ) {
-	my $u = Data::iRealPro::Input->new($opts)->parsefile($file);
-	unless ( $all ) {
-	    $all = $u;
-	}
-	else {
-	    $all->{playlist}->add_songs( $u->{playlist}->songs );
-	}
-    }
-    $all->{playlist}->{name} = decode_utf8($opts->{playlist})
-      if $opts->{playlist};
-#    use Data::Dumper; $Data::Dumper::Indent=1;warn(Dumper($all));
-    $all->{playlist}->{name} ||= "<NoName>";
+    my $all = Data::iRealPro::Input->new($opts)->parsefiles(@files);
     $self->{_backend}->new($opts)->process( $all, $opts );
 }
 

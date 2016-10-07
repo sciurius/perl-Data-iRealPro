@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Thu Oct  6 21:53:15 2016
-# Update Count    : 1402
+# Last Modified On: Fri Oct  7 09:59:25 2016
+# Update Count    : 1405
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -21,7 +21,7 @@ package Data::iRealPro::Output::Imager;
 
 use parent qw( Data::iRealPro::Output::Base );
 
-our $VERSION = "0.08";
+our $VERSION = "0.09";
 
 use Data::Dumper;
 use Text::CSV_XS;
@@ -61,7 +61,7 @@ sub new {
     }
 
     for ( qw( trace debug verbose output variant transpose toc crop
-	      npp npp_minor select
+	      npp npp_minor
 	   ) ) {
 	$self->{$_} = $options->{$_} if exists $options->{$_};
     }
@@ -126,9 +126,7 @@ sub process {
     # If it is a playlist, assume multiple songs.
     # With --output this must be either a PDF, or
     # contain %d or %t.
-    if ( $plname && @{ $u->{playlist}->{songs} } > 1
-	 && !$options->{select}
-       ) {
+    if ( $plname && @{ $u->{playlist}->{songs} } > 1 ) {
 	if ( $self->{output}
 	     && $self->{output} !~ /\%\d*[dt]/
 	     && $self->{output} !~ /\.pdf$/i ) {
@@ -163,8 +161,7 @@ sub process {
     my $csv_fd;
     my $csv_name;
     if ( $outtype eq "pdf"
-	 && @{ $u->{playlist}->{songs} } > 1
-	 && !$options->{select} ) {
+	 && @{ $u->{playlist}->{songs} } > 1 ) {
 	$csv_name = $self->{output};
 	$csv_name =~ s/\.pdf$/.csv/i;
 	open( $csv_fd, ">:encoding(utf8)", $csv_name );
@@ -182,7 +179,6 @@ sub process {
     my @book;
     foreach my $song ( @{ $u->{playlist}->{songs} } ) {
 	$songix++;
-	next if $options->{select} && $songix != $options->{select};
 	warn( sprintf("Song %3d: %s\n", $songix, $song->{title}) )
 	  if $self->{verbose};
 	push( @book, [ $song->{title}, $pageno ] );
@@ -1078,7 +1074,7 @@ sub npp_chord {
 	    $x -= 31;
 	}
 	if ( $flags & CHORD_ALTERNATIVE ) {
-	    ...;
+	    # Need anything?
 	}
 	$self->{im}->rubthrough( src => $img,
 				 tx => $x, ty => $y );
