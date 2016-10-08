@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Tue Sep  6 16:09:10 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Fri Oct  7 09:52:15 2016
-# Update Count    : 45
+# Last Modified On: Sat Oct  8 19:18:51 2016
+# Update Count    : 46
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -18,7 +18,7 @@ use utf8;
 
 package Data::iRealPro::Input;
 
-our $VERSION = "0.04";
+our $VERSION = "0.05";
 
 use Data::iRealPro::URI;
 use Data::iRealPro::Input::Text;
@@ -118,6 +118,7 @@ sub apply_selection {
     if ( $i > 0 && $i <= @{ $u->{playlist}->songs } ) {
 	$u->{playlist}->{songs} =
 	  [ $u->{playlist}->songs->[$i-1] ];
+	$u->{playlist}->{songs}->[0]->{songindex} = $i;
 	$u->{playlist}->{name} = "";
     }
     else {
