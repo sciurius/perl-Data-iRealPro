@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Fri Oct  7 09:59:25 2016
-# Update Count    : 1405
+# Last Modified On: Mon Oct 10 15:02:43 2016
+# Update Count    : 1416
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -16,12 +16,13 @@ use warnings;
 use Carp;
 use utf8;
 use App::Packager;
+use FindBin;
 
 package Data::iRealPro::Output::Imager;
 
 use parent qw( Data::iRealPro::Output::Base );
 
-our $VERSION = "0.09";
+our $VERSION = "0.10";
 
 use Data::Dumper;
 use Text::CSV_XS;
@@ -116,6 +117,7 @@ my $fonts =
 # Colors.
 my $black = "#000000";
 my $red   = "#ff0000";
+my $blue  = "#0000ff";
 
 sub process {
     my ( $self, $u, $options ) = @_;
@@ -421,8 +423,8 @@ sub make_image {
 	}
 
 	# Adjust low water mark.
-	if ( $y + 40 > $low ) {
-	    $low = $y + 40;
+	if ( $y + $dy > $low ) {
+	    $low = $y + $dy;
 	}
 
 	#### Cell contents ################
@@ -642,6 +644,19 @@ sub make_image {
 			 $y-1.5*$musicsize,
 			 $x+2*$dx,
 			 $y-1.5*$musicsize, $red );
+	    next;
+	}
+
+	if ( $cell->flags && $cell->flags & 0x01 ) { # invisible END
+	    my $disp = 0;
+	    if ( $self->{npp} ) {
+		$self->textl( $x-2, $y + $dy - 27 - ($dy / 74) * $disp,
+			      "END", 60, $textfont, $blue );
+		next;
+	    }
+	    $self->textl( $x+0.15*$musicsize,
+			  $y+0.55*$musicsize-($disp/(45/$musicsize)),
+			  "END", 0.5*$musicsize, $textfont, $blue );
 	    next;
 	}
 

@@ -6,7 +6,7 @@ use Carp;
 
 package Data::iRealPro::Song;
 
-our $VERSION = "0.03";
+our $VERSION = "0.043";
 
 use Encode qw( encode_utf8 );
 
@@ -233,7 +233,7 @@ sub tokenize {
 
 use Data::Struct;
 
-my @fields = qw( vs sz chord subchord text mark sign time lbar rbar alt );
+my @fields = qw( flags vs sz chord subchord text mark sign time lbar rbar alt );
 struct Cell => @fields;
 
 sub make_cells {
@@ -347,6 +347,11 @@ sub make_cells {
 
 	if ( $t =~ /^mark (.)/ ) {
 	    $cell->mark = $1;
+	    next;
+	}
+
+	if ( $t eq "stop" ) {
+	    $cell->flags = 0x01 | ($cell->flags||0); # WIP
 	    next;
 	}
 
