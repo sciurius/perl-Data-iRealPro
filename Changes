@@ -1,6 +1,11 @@
 Revision history for Data-iRealPro
 
-0.18	2016-10-07
+0.19	2016-10-10
+
+	Handle 'stop' instruction.
+	(cgi) Add NPP images.
+
+0.18	2016-10-10
 
 	Move combining and selecting to Input handler.
 	(Input) Add songindex so other tools can find out where the

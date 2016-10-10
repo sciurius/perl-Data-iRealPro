@@ -3,8 +3,8 @@
 # Author          : Johan Vromans
 # Created On      : Tue Mar  3 11:09:45 2015
 # Last Modified By: Johan Vromans
-# Last Modified On: Tue Oct  4 13:43:06 2016
-# Update Count    : 333
+# Last Modified On: Mon Oct 10 14:52:21 2016
+# Update Count    : 338
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -25,9 +25,10 @@ use Data::iRealPro::URI;
 use Data::iRealPro::Song;
 use Data::iRealPro::Output::Imager;
 use Data::iRealPro::Input;
+use FindBin;
 
 my $my_package = "Sciurix";
-my ($my_name, $my_version) = qw( iRealPro/Web 0.05 );
+my ($my_name, $my_version) = qw( iRealPro/Web 0.06 );
 
 print "Content-Type: text/html\n\n";
 
@@ -36,6 +37,7 @@ print "Content-Type: text/html\n\n";
 my $q = CGI->new;
 
 my $uri = $q->param("uri");
+my $npp = $q->param("npp");
 
 ################ Presets ################
 
@@ -96,6 +98,7 @@ foreach my $s ( @{ $u->{playlist}->{songs} } ) {
     # Make output names unique per song.
     my $image = sprintf( "tmp/ir%ds%d.png", $$, $song );
     my $options = { output => $image, scale => 1.4, crop => 1 };
+    $options->{npp} = $npp if $npp;
 
     # Re-package the song in a playlist.
     my $pl = Data::iRealPro::Playlist->new
@@ -208,6 +211,7 @@ textarea.irealbook {
   font-family: "courier", "monospace";
 }
 img.image {
+  width: 833px;
   border: 1px solid black;
 }
 </style>
