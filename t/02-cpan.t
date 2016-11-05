@@ -1,6 +1,6 @@
 #!perl -T
 
-use Test::More tests => 2;
+use Test::More tests => 3;
 
 SKIP: {
     eval { require Imager };
@@ -14,7 +14,9 @@ chdir("t") if -d "t";
 
 SKIP: {
     skip "Sorry, no NPP pixel images", 1
-      unless -s "../res/prefab/hand/root_c.png";
-    ok( -s "../res/prefab/hand/coda.png", 'NPP prefab images' );
+      unless -s "../res/drawable-nodpi-v4/quality_h.png";
+    ok( -s "../res/drawable-nodpi-v4/quality_h.png", 'NPP prefab images' );
     diag( "Good. We can generate NPP pixel images." );
+    ok( -s "../res/drawable-nodpi-v4/quality_h_hand.png", 'NPP prefab hand images' );
+    diag( "Good. We can generate NPP pixel images, hand-written style." );
 }

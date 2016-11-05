@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Sun Oct  2 22:59:30 2016
-# Update Count    : 89
+# Last Modified On: Sat Nov  5 16:07:01 2016
+# Update Count    : 91
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -193,7 +193,7 @@ irealcvt [options] file [...]
 			HTML files. Use --dir to control where the
 			files will be written.
     --dir=XXX		Specifies the result directory for --split.
-    --npp=[hand|standard]	Near pixel-perfect output.
+    --npp=[hand|hand_strict|standard]	Near pixel-perfect output.
     --transpose=[+-]NN  -x	Transpose up/down semitones.
     --[no]toc		Produces [suppresses] the table of contents.
 
@@ -295,8 +295,11 @@ files will be written.
 With PNG output, produces near pixel-perfect iRealPro output.
 
 I<variant> must be 'hand' (for the hand-written style) or 'standard'.
+iRealPro uses some non-hand symbols although hand-written versions are
+available. To obtain this exact behaviour, set the variant to 'hand_strict'.
 
-Add a minus at the end of the variant to select to get minor chords with an 'm' instead of the default '-'.
+Add a minus at the end of the variant to select to get minor chords
+with an 'm' instead of the default '-'.
 
 See also L<NPP IMAGING>.
 
@@ -339,7 +342,12 @@ The input file(s) to process.
 
 To enable pixel perfect images some proprietary files from the
 iRealPro app are required. For copyright reasons, these files cannot
-be included with this program. I'm working on a solution.
+be included with this program.
+
+The necessary files can be found in the iRealPro APK, folder
+res/drawable-nodpi-v4. Just copy these files to the
+res/drawable-nodpi-v4 folder of irealcvt and NPP imaging should be
+functional.
 
 =head1 AUTHOR
 
@@ -347,9 +355,9 @@ Johan Vromans, C<< <jv at cpan.org> >>
 
 =head1 BUGS
 
-Please report any bugs or feature requests to C<bug-music-irealpro at
+Please report any bugs or feature requests to C<bug-data-irealpro at
 rt.cpan.org>, or through the web interface at
-L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Music-iRealPro>. I
+L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=Data-iRealPro>. I
 will be notified, and then you'll automatically be notified of
 progress on your bug as I make changes.
 

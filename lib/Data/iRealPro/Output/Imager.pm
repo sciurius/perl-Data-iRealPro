@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Mon Oct 10 15:02:43 2016
-# Update Count    : 1416
+# Last Modified On: Sat Nov  5 15:58:07 2016
+# Update Count    : 1450
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -22,7 +22,7 @@ package Data::iRealPro::Output::Imager;
 
 use parent qw( Data::iRealPro::Output::Base );
 
-our $VERSION = "0.10";
+our $VERSION = "0.11";
 
 use Data::Dumper;
 use Text::CSV_XS;
@@ -49,6 +49,9 @@ sub new {
     if ( $options->{npp} ) {
 	die( "Unsupported output type for NPP. Please select PNG or JPG.\n")
 	  unless $options->{output} =~ /\.(jpg|png)$/i;
+	if ( $options->{npp} =~ s/_strict// ) {
+	    $options->{npp_strict} = 1;
+	}
 	if ( $options->{npp} =~ s/-$// ) {
 	    $options->{npp_minor} = '';
 	}
@@ -56,13 +59,21 @@ sub new {
 	    $options->{npp_minor} = 'm';
 	}
 	$options->{npp} = 'straight' unless $options->{npp} eq 'hand';
-	unless ( -s $self->{resdir} . "/prefab/" . $options->{npp} . "/root_c.png" ) {
+	$self->{prefab} = $self->{resdir} . "/drawable-nodpi-v4/";
+	# Quality_H is the 'missing symbol' symbol. It better be there.
+	if ( -s $self->{prefab} . "quality_h" .
+	        ( $options->{npp} eq 'hand' ? "_hand" : "" ) .
+	         ".png" ) {
+	}
+	else {
 	    die( "NPP Image generation not available" );
 	}
+	warn("Using NPP images from ", $self->{prefab}, "\n")
+	  if $options->{verbose};
     }
 
     for ( qw( trace debug verbose output variant transpose toc crop
-	      npp npp_minor
+	      npp npp_minor npp_strict
 	   ) ) {
 	$self->{$_} = $options->{$_} if exists $options->{$_};
     }
@@ -1228,16 +1239,30 @@ sub getimg {
     my ( $self, $img ) = @_;
     return $npp_imgcache{$img} if $npp_imgcache{$img};
 
-    my $if = $self->{resdir} . "/prefab/" . $self->{npp} . "/$img.png";
+    my $if = $self->{prefab} . $img . ".png";
+
+    if ( $self->{npp} eq "hand" ) {
+	# iRealPro uses some non-hand symbols even though nice alternatives exist.
+	unless ( $self->{npp_strict} && $img =~ /rehearsal_mark|root_nc|root_xx/ ) {
+	    $if =~ s/\.png/_hand.png/;
+	}
+	unless ( -s $if ) {
+	    # Fallback to non-hand symbols.
+	    $if =~ s/_hand\././;
+	}
+    }
+
     my $red = 0;
     unless ( -s $if ) {
 	$red = 1;
 	warn("Substituting <notfound> for \"$img\"\n");
-	$if = $self->{resdir} . "/prefab/" . $self->{npp} . "/quality_h.png";
+	$if = $self->{prefab} . "quality_h.png";
+	$if =~ s/\.png/_hand.png/ if $self->{npp} eq "hand";
     }
     $npp_imgcache{$img} = Imager->new( file => $if )
       or die( Imager->errstr );
 
+    # Some symbols are rendered in red.
     $red ||=  $img =~ /^ (?:
 			   .*rehearsal_mark_. |
 			   repeat_barline_(?:open|close) |
@@ -1245,6 +1270,12 @@ sub getimg {
 			   ending_.* |
 			   coda | fermata | segno
 		       ) $/x;
+
+    # The barline images are white instead of black. Reverse.
+    $npp_imgcache{$img}->map( all => [ reverse( 0..255) ], alpha => [] )
+      if $img =~ /(single|double)_barline/;
+
+    # Colourize if necessary.
     $npp_imgcache{$img}->map( red => [ reverse( 0..255) ] ) if $red;
 
     return $npp_imgcache{$img};

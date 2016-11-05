@@ -1,5 +1,12 @@
 Revision history for Data-iRealPro
 
+0.20	2016-11-xx
+
+	For NPP imaging, use the original res/drawable-nodpi-v4 folder
+	straight out of the APK.
+	Add --npp=hand_strict for 100% iRealPro conformance.
+	Update and improve regression tests.
+
 0.19	2016-10-10
 
 	Handle 'stop' instruction.

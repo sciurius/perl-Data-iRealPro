@@ -1,6 +1,7 @@
 #! /bin/make -f
 
-CVT := perl ../script/irealcvt.pl 
+CVT  := perl ../script/irealcvt.pl 
+CONV := convert -density 100x100
 
 default : dirs generate compare
 
@@ -14,17 +15,17 @@ basic :
 	${CVT} ref/Test_Page.txt -o out/Test_Page.txt.html
 	${CVT} Test_Page.html ref/Test_Page.html --playlist "Test Pages" -o out/Test_Pages.html
 	${CVT} Test_Page.html -o out/.Test_Page.pdf
-	convert  out/.Test_Page.pdf out/Test_Page.pdf.ppm 
+	${CONV} out/.Test_Page.pdf out/Test_Page.pdf.ppm 
 	${CVT} ref/Test_Pages.html -o out/.Test_Pages.pdf
-	convert  out/.Test_Pages.pdf out/Test_Pages.pdf.%d.ppm 
+	${CONV}  out/.Test_Pages.pdf out/Test_Pages.pdf.%d.ppm 
 	mv out/.Test_Pages.csv out/Test_Pages.csv 
 	${CVT} Test_Page.html -o out/Test_Page.png
 	if test -d ../res/prefab; then \
-	${CVT} Test_Page.html --npp=hand -o out/Test_Page1.jpg; \
-	${CVT} Test_Page.html --npp=standard -o out/Test_Page2.jpg; \
+	    ${CVT} Test_Page.html --npp=hand_strict -o out/Test_Page1.jpg; \
+	    ${CVT} Test_Page.html --npp=standard -o out/Test_Page2.jpg; \
 	else \
-	echo "No NPP testing"; \
-	rm -f ref/Test_Page?.jpg; \
+	    echo "No NPP testing"; \
+	    rm -f ref/Test_Page?.jpg; \
 	fi
 
 selections :
@@ -38,6 +39,8 @@ compare :
 	    if ! cmp -s $$i out/`basename $$i` >/dev/null 2>&1; then \
 		echo "FAIL: $$i"; \
 		rm -f out/.ok; \
+	    else \
+		echo "OK: $$i"; \
 	    fi; \
 	done
 	@test -f out/.ok && echo "All tests succeeded"
