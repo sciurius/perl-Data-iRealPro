@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Sat Nov  5 16:07:01 2016
-# Update Count    : 91
+# Last Modified On: Thu Nov 10 22:03:10 2016
+# Update Count    : 93
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -153,6 +153,8 @@ sub app_setup {
     $pod2usage->(1) if $help;
     $pod2usage->( VERBOSE => 2 ) if $man;
     app_ident(\*STDOUT) if $ident;
+
+    $pod2usage->(2) unless @ARGV;
 
     # Plug in command-line options.
     @{$options}{keys %$clo} = values %$clo;
