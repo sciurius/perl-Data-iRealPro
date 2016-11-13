@@ -13,7 +13,7 @@ SKIP: {
 chdir("t") if -d "t";
 
 SKIP: {
-    skip "Sorry, no NPP pixel images", 1
+    skip "Sorry, no NPP pixel images", 2
       unless -s "../res/drawable-nodpi-v4/quality_h.png";
     ok( -s "../res/drawable-nodpi-v4/quality_h.png", 'NPP prefab images' );
     diag( "Good. We can generate NPP pixel images." );
