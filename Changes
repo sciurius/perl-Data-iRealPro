@@ -1,5 +1,9 @@
 Revision history for Data-iRealPro
 
+0.21	2016-11-14
+
+	Fix problem with failing test.
+
 0.20	2016-11-10
 
 	For NPP imaging, use the original res/drawable-nodpi-v4 folder
