@@ -1,5 +1,11 @@
 Revision history for Data-iRealPro
 
+0.22	2016-11-15
+
+	(Imager) Environment variable RESDIR can now be used to point to the
+	resources location.
+	(Imager, NPP) Fix a problem with specific glyphs.
+
 0.21	2016-11-14
 
 	Fix problem with failing test.

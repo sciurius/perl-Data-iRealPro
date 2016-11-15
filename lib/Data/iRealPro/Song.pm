@@ -104,7 +104,8 @@ my $p_extra = qr{ (?: (?:add|sub)? [b#]? [0-9])* }x;
 # Give up... Allow any garbage.
 # OOPS: Doesn't work on Windows?
 #my $p_chord = qr{ $p_root [-\w\d#+*^]* (?: / $p_root )? }x;
-my $p_chord = qr{ $p_root [^\s\(\)\[\]\{\}\|,\240\<\>]* (?: / $p_root )? }x;
+# Chords can be separated by a 'l' too (e.g., sAlB).
+my $p_chord = qr{ $p_root [^\s\(\)\[\]\{\}\|,\240\<\>l]* (?: / $p_root )? }x;
 
 sub tokenize {
     my ( $self ) = @_;

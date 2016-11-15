@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Sat Nov  5 15:58:07 2016
-# Update Count    : 1450
+# Last Modified On: Tue Nov 15 16:15:56 2016
+# Update Count    : 1457
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -22,7 +22,7 @@ package Data::iRealPro::Output::Imager;
 
 use parent qw( Data::iRealPro::Output::Base );
 
-our $VERSION = "0.11";
+our $VERSION = "0.12";
 
 use Data::Dumper;
 use Text::CSV_XS;
@@ -35,14 +35,19 @@ sub new {
 
     my $self = bless( { variant => "irealpro" }, $pkg );
 
-    $self->{fontdir} = $ENV{FONTDIR};
+    # Get the resource dir.
+    $self->{resdir} = $ENV{RESDIR};
     if ( $App::Packager::PACKAGED ) {
-	$self->{resdir} = App::Packager::GetResourcePath();
+	$self->{resdir} ||= App::Packager::GetResourcePath();
     }
     else {
-	$self->{resdir} = "$FindBin::Bin/../res";
+	$self->{resdir} ||= "$FindBin::Bin/../res";
     }
-    $self->{fontdir} ||= $self->{resdir} . "/fonts";
+    $self->{resdir} .= "/";
+    $self->{resdir} =~ s;/+$;/;;
+
+    # Fonts resource dir.
+    $self->{fontdir} = $ENV{FONTDIR} || $self->{resdir} . "/fonts";
     $self->{fontdir} .= "/";
     $self->{fontdir} =~ s;/+$;/;;
 
@@ -520,12 +525,6 @@ sub make_image {
 	for ( $cell->text ) {
 	    next unless $_;
 	    my ( $disp, $t ) = @$_;
-	    # Displacement is 0 .. 74, in steps of 3.
-	    if ($self->{npp} ) {
-		$self->textl( $x-2, $y + $dy - 27 - ($dy / 74) * $disp, $t,
-			      74, $textfont, $red );
-		next;
-	    }
 
 	    if ( FONTSX && $self->{pdf} ) {
 		for ( split( //, $t ) ) {
@@ -533,15 +532,25 @@ sub make_image {
 		    warn( sprintf( "Missing glyph U+%04X\n", ord($_) ) );
 		}
 	    }
+
+	    my $hack;
 	    # Sometimes, THAI PAIYANNOI (U+2e7) is abused as
 	    # MUSICAL SYMBOL EIGHTH REST (u+1d13e).
-	    $t =~ s/\x{e2f}/\x{1d13e}/g;
+	    $t =~ s/\x{e2f}/\x{1d13e}/g && $hack++;
 	    # Likewise CYRILLIC SMALL LETTER GHE WITH UPTURN (U+491)
 	    # -> MUSICAL SYMBOL QUARTER REST (U+1D13D)
-	    $t =~ s/\x{491}/\x{1d13d}/g;
+	    $t =~ s/\x{491}/\x{1d13d}/g && $hack++;
 	    # Likewise BOX DRAWINGS DOWN SINGLE AND LEFT DOUBLE (U+2555)
 	    # -> MUSICAL SYMBOL SIXTEENTH REST (U+1D13F)
-	    $t =~ s/\x{2555}/\x{1d13f}/g;
+	    $t =~ s/\x{2555}/\x{1d13f}/g && $hack++;
+
+	    # Displacement is 0 .. 74, in steps of 3.
+	    if ($self->{npp} ) {
+		$self->textl( $x-2, $y + $dy - 27 - ($dy / 74) * $disp, $t,
+			      $hack ? 60 : 74, $textfont, $red );
+		next;
+	    }
+
 	    $self->textl( $x+0.15*$musicsize,
 			  $y+0.55*$musicsize-($disp/(45/$musicsize)),
 			  $t, 0.55*$musicsize, $textfont, $red );
@@ -659,6 +668,7 @@ sub make_image {
 	}
 
 	if ( $cell->flags && $cell->flags & 0x01 ) { # invisible END
+	    next;				     # suppress.
 	    my $disp = 0;
 	    if ( $self->{npp} ) {
 		$self->textl( $x-2, $y + $dy - 27 - ($dy / 74) * $disp,
