@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Thu Nov 10 22:03:10 2016
-# Update Count    : 93
+# Last Modified On: Wed Nov 16 22:05:19 2016
+# Update Count    : 95
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -237,6 +237,11 @@ See the B<--npp> option for details.
 
 See also L<NPP IMAGING>.
 
+If multiple output pages are to be generated you can add a sprintf()
+compliant %d sequence in the output file name. For example, with
+B<--output=img%04d.png> output files will be B<img0001.png>,
+B<img0002.png>, and so on.
+
 =item JSON
 
 This is basically a low-level representation of the contents of the
@@ -268,7 +273,7 @@ B<--dir>).
 
 Specifies the desired output file name.
 
-The file name extension controls the output type.
+The file name extension controls the output type. 
 
 =item B<--select=>I<NN>
 
