@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Tue Sep  6 14:58:26 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Tue Oct  4 13:00:48 2016
-# Update Count    : 68
+# Last Modified On: Wed Nov 16 22:18:51 2016
+# Update Count    : 70
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -18,7 +18,7 @@ use utf8;
 
 package Data::iRealPro::Input::Text;
 
-our $VERSION = "0.01";
+our $VERSION = "0.02";
 
 use Data::iRealPro::URI;
 use Data::iRealPro::Playlist;
@@ -72,7 +72,7 @@ sub encode_song {
 	$tv->{pl_name} = $1 unless $1 eq "<NoName>";
     }
 
-    if ( $data =~ /^Song(?:\s+\d+)?:\s+(.*?)\s+\((.*?)\)/m ) {
+    if ( $data =~ /^Song(?:\s+\d+)?:\s+(.*)\s+\((.*?)\)/m ) {
 	$tv->{title} = $1;
 	my @t = split( ' ', $2 );
 	@t[0,1] = @t[1,0] if @t == 2;
