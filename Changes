@@ -1,5 +1,16 @@
 Revision history for Data-iRealPro
 
+0.23	2016-11-16
+
+	(Song a.o.) Fix problem where a vertical shift halfway the
+        line could result in a not yet shifted right barline
+        overprinting a shifted left bar line, making a barline that is
+        too long.
+	(Input/Text) Fix composer detection in text input.
+	(Song) Modify the chords parser to use a regex built from
+	the official list of chord qualities.
+	(irealcvt) Document sprintf() %d sequence in output file names.
+
 0.22	2016-11-15
 
 	(Imager) Environment variable RESDIR can now be used to point to the
