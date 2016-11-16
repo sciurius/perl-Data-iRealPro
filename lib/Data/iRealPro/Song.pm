@@ -6,7 +6,7 @@ use Carp;
 
 package Data::iRealPro::Song;
 
-our $VERSION = "0.044";
+our $VERSION = "0.45";
 
 use Encode qw( encode_utf8 );
 
@@ -324,12 +324,21 @@ sub make_cells {
     my $new_cell = sub {
 	$cell = struct "Cell";
 	$cell->sz = $chordsize if $chordsize;
-	$cell->vs = $vspace if $vspace;
+	$cell->vs = $vspace;	# always
 	push( @$cells, $cell );
     };
 
     my $new_measure = sub {
-	@$cells >= 2 and $cells->[-2]->rbar ||= "barlineSingle";
+	# This is to make sure a bar on the beginning of a line has a
+	# corresponding bar on the end of the previous line.
+	# However, we cannot do that if there's a vertical shift
+	# involved.
+	if ( @$cells >= 2
+	     &&
+	     $cells->[-2]->vs == $cells->[-1]->vs
+	   ) {
+	    $cells->[-2]->rbar ||= "barlineSingle";
+	}
 	$cells->[-1]->lbar ||= "barlineSingle";
     };
 

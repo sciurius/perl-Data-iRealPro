@@ -34,14 +34,18 @@ is( scalar(@$cells), 75, "Got all cells" );
 
 # Check some random cells.
 
-is_deeply( $cells->[0], { 'chord' => 'D',
-			  'time' => [ '4', '4' ],
-			  'lbar' => 'repeatLeft',
-			  'mark' => 'i' },
+is_deeply( $cells->[0], { chord => 'D',
+			  time  => [ '4', '4' ],
+			  lbar  => 'repeatLeft',
+			  mark  => 'i',
+			  vs    => 0,
+			},
 	   "Cell #0 {T44*iD" );
 
-is_deeply( $cells->[58], { }, "Cell #58 (empty)" );
+is_deeply( $cells->[58], { vs   => 0 }, "Cell #58 (empty)" );
 
-is_deeply( $cells->[64], { 'rbar' => 'barlineDouble',
-			   'text' => [ '0', 'D.S. al Coda' ] },
+is_deeply( $cells->[64], { rbar => 'barlineDouble',
+			   text => [ '0', 'D.S. al Coda' ],
+			   vs   => 0,
+			 },
 	   "Cell #64 D.S. al Coda ||" );

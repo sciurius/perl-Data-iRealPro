@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Tue Nov 15 16:15:56 2016
-# Update Count    : 1457
+# Last Modified On: Wed Nov 16 22:39:06 2016
+# Update Count    : 1458
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -22,7 +22,7 @@ package Data::iRealPro::Output::Imager;
 
 use parent qw( Data::iRealPro::Output::Base );
 
-our $VERSION = "0.12";
+our $VERSION = "0.13";
 
 use Data::Dumper;
 use Text::CSV_XS;
@@ -325,7 +325,7 @@ sub make_image {
 	# Calculate the required heigth and create the canvas.
 	my $v = $tm;		# top margin
 	$v += int( ( @$cells + 15 ) / $numcols ) * $dy; # cells
-	$v += ( $cells->[-1]->vs || 0 ) * 121;	       # extra
+	$v += $cells->[-1]->vs * 121;	       # extra
 	$v = CANVAS_HEIGHT if $v < CANVAS_HEIGHT; # minimal
 	$self->{im} = Imager->new( xsize => CANVAS_WIDTH,
 				   ysize => $v,
