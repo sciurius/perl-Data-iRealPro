@@ -6,7 +6,7 @@ use Carp;
 
 package Data::iRealPro::Song;
 
-our $VERSION = "0.043";
+our $VERSION = "0.044";
 
 use Encode qw( encode_utf8 );
 
@@ -97,15 +97,88 @@ sub cells {
 
 ################ Tokenizer ################
 
+#### Chord qualities.
+#
+# key is the official way to write a chord quality. This is what the iRealPro
+#     editor produces when you specify chords via the menus.
+# value is the quality as used to select the corresponding image files.
+#
+# Often used variants are v for ^, x for # and h for ø.
+#
+# Anything else should be written as a *...* quality.
+
+my %chordqual =
+  (  ""			=> '',
+     "+"		=> 'p',
+     "-"		=> 'm',
+     "-#5"		=> 'mx5',
+     "-11"		=> 'm11',
+     "-6"		=> 'm6',
+     "-69"		=> 'm69',
+     "-7"		=> 'm7',
+     "-7b5"		=> 'm7b5',
+     "-9"		=> 'm9',
+     "-^7"		=> 'mv7',
+     "-^9"		=> 'mv9',
+     "-b6"		=> 'mb6',
+     "11"		=> '11',
+     "13"		=> '13',
+     "13#11"		=> '13x11',
+     "13#9"		=> '13x9',
+     "13b9"		=> '13b9',
+     "13sus"		=> '13sus',
+     "2"		=> '2',
+     "5"		=> '5',
+     "6"		=> '6',
+     "69"		=> '69',
+     "7"		=> '7',
+     "7#11"		=> '7x11',
+     "7#5"		=> '7x5',
+     "7#9"		=> '7x9',
+     "7#9#11"		=> '7x9x11',
+     "7#9#5"		=> '7x9x5',
+     "7#9b5"		=> '7x9b5',
+     "7alt"		=> '7alt',
+     "7b13"		=> '7b13',
+     "7b13sus"		=> '7b13sus',
+     "7b5"		=> '7b5',
+     "7b9"		=> '7b9',
+     "7b9#11"		=> '7b9x11',
+     "7b9#5"		=> '7b9x5',
+     "7b9#9"		=> '7b9x9',
+     "7b9b13"		=> '7b9b13',
+     "7b9b5"		=> '7b9b5',
+     "7b9sus"		=> '7b9sus',
+     "7sus"		=> '7sus',
+     "7susadd3"		=> '7susadd3',
+     "9"		=> '9',
+     "9#11"		=> '9x11',
+     "9#5"		=> '9x5',
+     "9b5"		=> '9b5',
+     "9sus"		=> '9sus',
+     "^"		=> 'v',
+     "^13"		=> 'v13',
+     "^7"		=> 'v7',
+     "^7#11"		=> 'v7x11',
+     "^7#5"		=> 'v7x5',
+     "^9"		=> 'v9',
+     "^9#11"		=> 'v9x11',
+     "add9"		=> 'add9',
+     "alt"		=> '7alt',
+     "h"		=> 'h',
+     "h7"		=> 'h7',
+     "h9"		=> 'h9',
+     "o"		=> 'o',
+     "o7"		=> 'o7',
+     "sus"		=> 'sus',
+  );
+
+# Build regex.
 my $p_root  = qr{ (?: [ABCDEFG][#b]? | W) }x;
-my $p_qual  = qr{ (?: \*[^*]*\*|o|h|dim|[79]?sus[24]?|13sus|[79]?alt|-?\^?7|-?\^7?|-|\+)* }x;
-my $p_extra = qr{ (?: (?:add|sub)? [b#]? [0-9])* }x;
-#my $p_chord = qr{ $p_root $p_qual $p_extra (?: / $p_root )? }x;
-# Give up... Allow any garbage.
-# OOPS: Doesn't work on Windows?
-#my $p_chord = qr{ $p_root [-\w\d#+*^]* (?: / $p_root )? }x;
-# Chords can be separated by a 'l' too (e.g., sAlB).
-my $p_chord = qr{ $p_root [^\s\(\)\[\]\{\}\|,\240\<\>l]* (?: / $p_root )? }x;
+# By using reverse the longest alternatives will be tested first.
+my $p_qual = join("|", map { quotemeta } reverse sort keys %chordqual);
+$p_qual = qr{ (?: \*[^*]*\* | $p_qual ) }xo;
+my $p_chord = qr{ $p_root $p_qual (?: / $p_root )? }xo;
 
 sub tokenize {
     my ( $self ) = @_;
@@ -231,6 +304,8 @@ sub tokenize {
 
     return $self->{tokens};
 }
+
+sub chordqual { \%chordqual }
 
 use Data::Struct;
 
