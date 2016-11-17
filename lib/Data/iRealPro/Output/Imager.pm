@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Wed Nov 16 22:39:06 2016
-# Update Count    : 1458
+# Last Modified On: Thu Nov 17 21:51:53 2016
+# Update Count    : 1476
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -562,54 +562,78 @@ sub make_image {
 	    my $c = $_;
 	    my $font = $cell->sz ? $chrdfont : $chordfont;
 
-	    if ( $c =~ /^repeat1Bar$/ ) {
+	    if ( $c =~ /repeat\dBars?/ ) {
 
-		# Find previous bar line.
-		my $pb = $i;
-		while ( $pb >= 0) {
-		    last if $cells->[$pb]->lbar
-		      || ( $pb > 1 && $cells->[$pb-1]->rbar );
-		    $pb--;
+		# npp_strict
+		#   both go at the border of this and the next cell
+		# else
+		#   1bar and 2bar not before barline: center in measure
+		#   2bar before barline: center on barline
+
+		if ( $self->{npp_strict} ) {
+		    $x += $dx;
+		    if (  $c eq "repeat1Bar" ) {
+			$self->npp_repeat( $x, $y, 1 );
+		    }
+		    else {
+			$self->npp_repeat( $x, $y, 2 );
+		    }
 		}
-		# Find next bar line.
-		my $nb = $i;
-		while ( $nb < @$cells ) {
-		    last if $cells->[$nb]->rbar
-		      || ( $nb+1 < @$cells && $cells->[$nb+1]->lbar );
-		    $nb++;
+		elsif ( $c eq "repeat1Bar"
+		     || ( $c eq "repeat2Bars" && !$cell->rbar )
+		   ) {
+
+		    # Find previous bar line.
+		    my $pb = $i;
+		    while ( $pb >= 0) {
+			last if $cells->[$pb]->lbar
+			  || ( $pb > 1 && $cells->[$pb-1]->rbar );
+			$pb--;
+		    }
+		    # Find next bar line.
+		    my $nb = $i;
+		    while ( $nb < @$cells ) {
+			last if $cells->[$nb]->rbar
+			  || ( $nb+1 < @$cells && $cells->[$nb+1]->lbar );
+			$nb++;
+		    }
+
+		    # Center between the barlines.
+		    $x -= ( $i-$pb ) * $dx;
+		    $x += ( $nb-$pb+1 ) * $dx/2;
+		    if ( $self->{npp} ) {
+			if (  $c eq "repeat1Bar" ) {
+			    $self->npp_repeat( $x, $y, 1 );
+			}
+			else {
+			    $self->npp_repeat( $x, $y, 2 );
+			}
+		    }
+		    else {
+			$self->textc( $x, ($y-0.3*$musicsize),
+				      $musicglyphs->{$c}, $chordsize, $musicfont );
+		    }
 		}
 
-		# Center between the barlines.
-		$x -= ( $i-$pb ) * $dx;
-		$x += ( $nb-$pb+1 ) * $dx/2;
-		if ( $self->{npp} ) {
-		    $self->npp_repeat1( $x, $y );
-		}
 		else {
-		    $self->textc( $x, ($y-0.3*$musicsize),
-				  $musicglyphs->{$c}, $chordsize, $musicfont );
-		}
-		next;
-	    }
 
-	    if ( $c =~ /^repeat2Bars$/ ) {
+		    # Find next bar line.
+		    my $nb = $i;
+		    while ( $nb < @$cells ) {
+			last if $cells->[$nb]->rbar
+			  || ( $nb+1 < @$cells && $cells->[$nb+1]->lbar );
+			$nb++;
+		    }
 
-		# Find next bar line.
-		my $nb = $i;
-		while ( $nb < @$cells ) {
-		    last if $cells->[$nb]->rbar
-		      || ( $nb+1 < @$cells && $cells->[$nb+1]->lbar );
-		    $nb++;
-		}
-
-		# Overprint next barline.
-		$x += ( $nb-$i+1 ) * $dx;
-		if ( $self->{npp} ) {
-		    $self->npp_repeat2( $x, $y );
-		}
-		else {
-		    $self->textc( $x, ($y-0.3*$musicsize),
-				  $musicglyphs->{$c}, $chordsize, $musicfont );
+		    # Overprint next barline.
+		    $x += ( $nb-$i+1 ) * $dx;
+		    if ( $self->{npp} ) {
+			$self->npp_repeat( $x, $y, 2 );
+		    }
+		    else {
+			$self->textc( $x, ($y-0.3*$musicsize),
+				      $musicglyphs->{$c}, $chordsize, $musicfont );
+		    }
 		}
 		next;
 	    }
@@ -1202,21 +1226,12 @@ sub npp_mark {
 			     tx => $x-55, ty => $y-76 );
 }
 
-sub npp_repeat1 {
-    my ( $self, $x, $y ) = @_;
-    my $r = $self->getimg("root_x");
+sub npp_repeat {
+    my ( $self, $x, $y, $n ) = @_;
+    my $r = $self->getimg("root_" . ("x" x $n));
     my $w = $r->getwidth;
     $self->{im}->rubthrough( src => $r,
-			     tx => $x - $w/2 - 6,
-			     ty => $y + 56 );
-}
-
-sub npp_repeat2 {
-    my ( $self, $x, $y ) = @_;
-    my $r = $self->getimg("root_xx");
-    my $w = $r->getwidth;
-    $self->{im}->rubthrough( src => $r,
-			     tx => $x - $w/2 - 6,
+			     tx => $x - $w/2 - 8,
 			     ty => $y + 56 );
 }
 

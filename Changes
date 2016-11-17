@@ -1,5 +1,11 @@
 Revision history for Data-iRealPro
 
+0.24	2016-11-17
+
+	(Imager) Fix placement of single and double bar repeats.
+	In npp strict mode matches iRealPro.
+	Add chord tests to MANIFEST and git.
+
 0.23	2016-11-16
 
 	(Song a.o.) Fix problem where a vertical shift halfway the
