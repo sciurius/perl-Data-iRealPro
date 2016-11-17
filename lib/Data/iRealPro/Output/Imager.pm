@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Thu Nov 17 21:51:53 2016
-# Update Count    : 1476
+# Last Modified On: Thu Nov 17 23:12:41 2016
+# Update Count    : 1484
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -22,7 +22,7 @@ package Data::iRealPro::Output::Imager;
 
 use parent qw( Data::iRealPro::Output::Base );
 
-our $VERSION = "0.13";
+our $VERSION = "0.14";
 
 use Data::Dumper;
 use Text::CSV_XS;
@@ -407,6 +407,11 @@ sub make_image {
     };
 
     my $low;			# water mark to crop image
+
+    # Discard final (trailing?) empty cells for a correct $low.
+    # Note: Empty cells have just a 'vs' element.
+    pop( @$cells )
+      while $cells->[-1] && keys( %{ $cells->[-1] } ) == 1;
 
     # Process the cells.
     for ( my $i = 0; $i < @$cells; $i++ ) {
