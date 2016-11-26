@@ -18,7 +18,7 @@ use utf8;
 
 package Data::iRealPro::Output;
 
-our $VERSION = "0.02";
+our $VERSION = "1.00";
 
 use Data::iRealPro::Input;
 use Encode qw ( decode_utf8 );

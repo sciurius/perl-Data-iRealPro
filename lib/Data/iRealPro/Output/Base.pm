@@ -18,7 +18,7 @@ use utf8;
 
 package Data::iRealPro::Output::Base;
 
-our $VERSION = "0.01";
+our $VERSION = "1.00";
 
 sub new {
     my ( $pkg, $options ) = @_;

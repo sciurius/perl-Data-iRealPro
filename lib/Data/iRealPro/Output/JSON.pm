@@ -20,7 +20,7 @@ package Data::iRealPro::Output::JSON;
 
 use parent qw( Data::iRealPro::Output::Base );
 
-our $VERSION = "0.07";
+our $VERSION = "1.00";
 
 use JSON::PP;
 

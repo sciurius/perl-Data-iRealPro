@@ -18,7 +18,7 @@ use utf8;
 
 package Data::iRealPro::Input;
 
-our $VERSION = "0.05";
+our $VERSION = "1.00";
 
 use Data::iRealPro::URI;
 use Data::iRealPro::Input::Text;

@@ -18,7 +18,7 @@ use utf8;
 
 package Data::iRealPro::Input::Text;
 
-our $VERSION = "0.02";
+our $VERSION = "1.00";
 
 use Data::iRealPro::URI;
 use Data::iRealPro::Playlist;

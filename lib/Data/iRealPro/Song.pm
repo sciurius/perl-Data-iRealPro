@@ -6,7 +6,7 @@ use Carp;
 
 package Data::iRealPro::Song;
 
-our $VERSION = "0.45";
+our $VERSION = "1.00";
 
 use Encode qw( encode_utf8 );
 

@@ -20,7 +20,7 @@ package Data::iRealPro::Output::Text;
 
 use parent qw( Data::iRealPro::Output::Base );
 
-our $VERSION = "0.02";
+our $VERSION = "1.00";
 
 use Data::iRealPro::URI;
 use Data::iRealPro::Playlist;
