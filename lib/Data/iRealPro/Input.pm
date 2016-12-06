@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Tue Sep  6 16:09:10 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Sat Oct  8 19:18:51 2016
-# Update Count    : 46
+# Last Modified On: Tue Dec  6 11:59:31 2016
+# Update Count    : 54
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -33,7 +33,7 @@ sub new {
 	$self->{$_} = $options->{$_} if exists $options->{$_};
     }
 
-    for ( qw( playlist ) ) {
+    for ( qw( playlist catalog ) ) {
 	$self->{$_} = decode_utf8($options->{$_}) if exists $options->{$_};
     }
 
@@ -89,7 +89,11 @@ sub parsedata {
 
     else {
 	if ( $data =~ /^Song( \d+)?:/ ) {
-	    $all = Data::iRealPro::Input::Text->encode($data);
+	    $all = Data::iRealPro::Input::Text::encode( $self, $data );
+	}
+	elsif ( $data =~ /^<\?xml.*?>\s*<!doctype\s+score-partwise\s+/i ) {
+	    require Data::iRealPro::Input::MusicXML;
+	    $all = Data::iRealPro::Input::MusicXML::encode( $self, $data );
 	}
 	else {
 	    # Extract URL.

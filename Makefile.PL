@@ -30,6 +30,7 @@ WriteMakefile
 		    'Text::CSV_XS' => 1.19,
 		    'JSON::PP'	   => 2.27300,
 		    'HTML::Entities' => 3.69,
+		    # 'XML::LibXML'  => 2.0120, # assumed
 		   },
  BUILD_REQUIRES  => {
 		    'Test::More'   => 1.001014,

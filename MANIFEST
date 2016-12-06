@@ -8,6 +8,8 @@ lib/App/Packager.pm
 lib/Data/iRealPro.pm
 lib/Data/iRealPro/Bundle.pm
 lib/Data/iRealPro/Input.pm
+lib/Data/iRealPro/Input/MusicXML.pm
+lib/Data/iRealPro/Input/MusicXML/Data.pm
 lib/Data/iRealPro/Input/Text.pm
 lib/Data/iRealPro/Output.pm
 lib/Data/iRealPro/Output/Base.pm
@@ -18,6 +20,8 @@ lib/Data/iRealPro/Output/Text.pm
 lib/Data/iRealPro/Playlist.pm
 lib/Data/iRealPro/Song.pm
 lib/Data/iRealPro/URI.pm
+res/catalog.xml
+res/catalogs/README
 res/fonts/BravuraCn.ttf
 res/fonts/Bravura.ttf
 res/fonts/DroidSans.ttf
@@ -35,6 +39,7 @@ t/15-string.t
 t/16-input.t
 t/17-text.t
 t/18-inputs.t
+t/19-musicxml.t
 t/20-json.t
 t/21-html.t
 t/22-html.t

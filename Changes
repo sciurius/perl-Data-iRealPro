@@ -1,5 +1,10 @@
 Revision history for Data-iRealPro
 
+1.01	2016-12-06
+
+	(JSON) Fix problem with generic TO_JSON method.
+	(MusicXML) Add MusicXML import (experimental!).
+	
 1.00	2016-11-26
 
 	Release 1.00.

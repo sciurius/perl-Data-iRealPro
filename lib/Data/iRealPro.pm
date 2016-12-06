@@ -11,7 +11,7 @@ Data::iRealPro - Convert iRealBook/iRealPro data
 
 =cut
 
-our $VERSION = "1.00";
+our $VERSION = "1.01";
 
 =head1 SYNOPSIS
 
@@ -37,6 +37,8 @@ official 'irealb' format is proprietary and uses some form of
 scrambling to hide the contents. iRealPro can export songs in the form
 of a HTML document that contains the data in big URLs, and some
 printable formats.
+
+MusicXML input is possible if the module L<XML::LibXML> is available.
 
 Data::iRealPro provides a set of modules that can be used to read and
 analyse iRealPro songs in URL format and convert them into something

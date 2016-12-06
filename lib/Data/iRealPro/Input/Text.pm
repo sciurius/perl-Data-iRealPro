@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Tue Sep  6 14:58:26 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Wed Nov 16 22:18:51 2016
-# Update Count    : 70
+# Last Modified On: Tue Dec  6 11:23:19 2016
+# Update Count    : 71
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -37,13 +37,13 @@ sub encode {
     while ( $data =~ /\A(Song(?: (\d+))?:.*?)^(Song(?: \d+)?:.*)/ms ) {
 	warn("Expecting song ", 1+@songs, " but got $2\n")
 	  unless $2 == 1 + @songs;
-	push( @songs, $self->encode_song($1) );
+	push( @songs, encode_song( $self, $1 ) );
 	$data = $3;
     }
     if ( $data =~ /^Song(?: (\d+))?:.*/ ) {
 	warn("Expecting song number ", 1+@songs, " but got number $1\n")
 	  if $1 && $1 != 1 + @songs;
-	push( @songs, $self->encode_song($data) );
+	push( @songs, encode_song( $self, $data ) );
     }
 
     # Build a playlist for the songs...
