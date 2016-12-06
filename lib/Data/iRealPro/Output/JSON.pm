@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Tue Oct  4 12:47:40 2016
-# Update Count    : 1083
+# Last Modified On: Tue Dec  6 10:22:35 2016
+# Update Count    : 1094
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -20,7 +20,7 @@ package Data::iRealPro::Output::JSON;
 
 use parent qw( Data::iRealPro::Output::Base );
 
-our $VERSION = "1.00";
+our $VERSION = "1.01";
 
 use JSON::PP;
 
@@ -32,11 +32,13 @@ sub process {
     my $json = JSON::PP->new->utf8(1)->pretty->indent->canonical;
     $json->allow_blessed->convert_blessed;
     *UNIVERSAL::TO_JSON = sub {
-	my $b_obj = B::svref_2object( $_[0] );
-	return    $b_obj->isa('B::HV') ? { %{ $_[0] } }
-	  : $b_obj->isa('B::AV') ? [ @{ $_[0] } ]
-	    : undef
-	      ;
+	my $obj = "".$_[0];
+	return $obj =~ /=HASH\(/
+	  ? { %{$_[0]} }
+	    : $obj =~ /=ARRAY\(/
+	      ? [ @{$_[0]} ]
+		: undef
+		  ;
     };
 
     # Process the song(s).
