@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Thu Nov 17 23:12:41 2016
-# Update Count    : 1484
+# Last Modified On: Tue Dec  6 11:26:16 2016
+# Update Count    : 1506
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -28,7 +28,7 @@ use Data::Dumper;
 use Text::CSV_XS;
 use Encode qw( encode_utf8 );
 
-use constant FONTSX => 0;
+use constant FONTSX => 1;
 
 sub new {
     my ( $pkg, $options ) = @_;
@@ -368,6 +368,7 @@ sub make_image {
     if ( $dy < 1.6*$musicsize ) {
 	$dy = 1.6*$musicsize;
     }
+    my %missing_glyphs;
 
     $self->{pages} = 0;
 
@@ -531,10 +532,23 @@ sub make_image {
 	    next unless $_;
 	    my ( $disp, $t ) = @$_;
 
-	    if ( FONTSX && $self->{pdf} ) {
-		for ( split( //, $t ) ) {
-		    next if $textfont->uniByEnc(ord($_));
-		    warn( sprintf( "Missing glyph U+%04X\n", ord($_) ) );
+	    if ( FONTSX ) {
+		if ( $self->{pdf} ) {
+		    for ( split( //, $t ) ) {
+			next if $textfont->uniByEnc(ord($_));
+			my $c = ord(substr($t,$i,1));
+			next if $missing_glyphs{$c};
+			$missing_glyphs{$c} = 1;
+		    }
+		}
+		if ( $self->{im} ) {
+		    my @c = $textfont->has_chars( string => $t );
+		    for ( my $i = 0; $i < @c; $i++ ) {
+			next if $c[$i];
+			my $c = ord(substr($t,$i,1));
+			next if $missing_glyphs{$c};
+			$missing_glyphs{$c} = 1;
+		    }
 		}
 	    }
 
@@ -727,6 +741,13 @@ sub make_image {
 
 	next;
 	# }}}
+    }
+
+    if ( FONTSX && %missing_glyphs ) {
+	printf STDERR ( "Missing glyphs:" );
+	printf STDERR ( " U+%04X", $_)
+	  foreach sort map { abs($_) } keys %missing_glyphs;
+	print STDERR ("\n");
     }
 
     # Crop excess bottom space.
