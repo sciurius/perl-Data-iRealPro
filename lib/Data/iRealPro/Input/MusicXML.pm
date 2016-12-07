@@ -7,7 +7,7 @@ use utf8;
 
 package Data::iRealPro::Input::MusicXML;
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 use XML::LibXML;
 #use DDumper;
@@ -49,7 +49,7 @@ sub encode {
 
     # print DDumper($data);
 
-    $self = bless {}, __PACKAGE__;
+    $self = bless { neatify => $self->{neatify} }, __PACKAGE__;
 
     my $root = "/score-partwise";
     my $rootnode = $data->findnodes($root)->[0];
@@ -95,7 +95,7 @@ sub encode {
     $self->_process( $rootnode, "part", \&process_part,
 		     { path => $root } );
 
-    use DDumper; DDumper($self->{song});
+#    use DDumper; DDumper($self->{song});
 
     my $variant = 'irealpro';
     my $plname = "Import via MusicXML";
@@ -403,8 +403,16 @@ sub to_irealpro {
      );
 
     my $irp = "";
-
+    my $ix = 0;
+    my $bpm = 4;
+    my $neatify = $self->{neatify} || 0;
+warn("XXX $neatify");
     foreach my $s ( @{ $part->{sections} } ) {
+	while ( $ix % 16 ) {
+	    $irp .= " " if $neatify;
+	    $ix++;
+	}
+	$irp .= "Y" if $neatify > 1;
 	if ( my $mark = $s->{mark} ) {
 	    $mark = 'A' unless $mark =~ /^[ABCD]$/;
 	    $irp .= '[*' . $mark;
@@ -416,6 +424,7 @@ sub to_irealpro {
 	if ( $s->{time} ) {
 	    $irp .= "," if $irp =~ /[[:alnum:]]$/;
 	    $irp .= "T" . timesig( $s->{time} );
+	    $bpm = $1 if $s->{time} =~ /(^\d+)/;
 	}
 
 	foreach my $m ( @{ $s->{measures} } ) {
@@ -460,6 +469,7 @@ sub to_irealpro {
 	    else {
 		$irp .= "|";
 	    }
+	    $ix += $bpm;
 	}
 	$irp =~ s/\|$//;
         $irp .= "]";

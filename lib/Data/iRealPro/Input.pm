@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Tue Sep  6 16:09:10 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Tue Dec  6 11:59:31 2016
-# Update Count    : 54
+# Last Modified On: Wed Dec  7 21:06:43 2016
+# Update Count    : 61
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -18,7 +18,7 @@ use utf8;
 
 package Data::iRealPro::Input;
 
-our $VERSION = "1.00";
+our $VERSION = "1.01";
 
 use Data::iRealPro::URI;
 use Data::iRealPro::Input::Text;
@@ -29,7 +29,8 @@ sub new {
 
     my $self = bless( { variant => "irealpro" }, $pkg );
 
-    for ( qw( trace debug verbose output variant transpose select ) ) {
+    for ( qw( trace debug verbose output variant transpose
+	      neatify select ) ) {
 	$self->{$_} = $options->{$_} if exists $options->{$_};
     }
 

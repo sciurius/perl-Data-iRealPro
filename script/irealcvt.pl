@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Tue Dec  6 08:25:43 2016
-# Update Count    : 97
+# Last Modified On: Wed Dec  7 21:03:44 2016
+# Update Count    : 103
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -27,7 +27,6 @@ $options = app_setup("ireal2pdf", $Data::iRealPro::VERSION);
 
 ################ Presets ################
 
-$options->{catalog} = "$FindBin::Bin/../res/catalog.xml";
 $options->{trace} = 1   if $options->{debug};
 $options->{verbose} = 1 if $options->{trace};
 
@@ -94,6 +93,8 @@ sub app_setup {
        output		=> undef,
        transpose	=> 0,
        toc		=> undef,
+       neatify		=> 0,
+       catalog		=> "$FindBin::Bin/../res/catalog.xml",
 
        # Development options (not shown with -help).
        debug		=> 0,		# debugging
@@ -129,6 +130,7 @@ sub app_setup {
 	  'transpose|x=i',
 	  'toc!',
 	  'catalog=s',
+	  'neatify=i',
 
 	  # # Configuration handling.
 	  # 'config=s',

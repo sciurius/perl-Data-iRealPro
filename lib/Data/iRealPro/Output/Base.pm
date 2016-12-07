@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Mon Oct  3 08:13:17 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Tue Dec  6 08:28:47 2016
-# Update Count    : 20
+# Last Modified On: Wed Dec  7 21:06:08 2016
+# Update Count    : 21
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -35,7 +35,7 @@ sub new {
 sub options {
     # The list of options this backend can handle.
     # Note that 'output' is handled by Output.pm.
-    [ qw( trace debug verbose variant playlist catalog select ) ]
+    [ qw( trace debug verbose variant playlist catalog neatify select ) ]
 }
 
 1;
