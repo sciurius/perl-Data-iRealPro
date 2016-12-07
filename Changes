@@ -1,5 +1,9 @@
 Revision history for Data-iRealPro
 
+1.02	2016-12-07
+
+	Remove DDumper from MusicXML.
+
 1.01	2016-12-06
 
 	(JSON) Fix problem with generic TO_JSON method.
