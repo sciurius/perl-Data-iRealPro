@@ -240,7 +240,7 @@ sub process_measure {
 	$ctx->{divisions} = $ctx->{_parent}->{divisions};
     }
 
-    my ( $lbar, $rbar, $ending, $segno, $coda );
+    my ( $lbar, $rbar, $ending, $segno, $coda, $awords, $bwords );
     if ( my $d = $data->fn1(q{barline[@location='left']/ending[@type='start']} ) ) {
 	foreach ( $d->attributes ) {
 	    next unless $_->getName eq "number";
@@ -252,6 +252,12 @@ sub process_measure {
     }
     if ( my $d = $data->fn1(q{barline[@location='left']/repeat[@direction='forward']} ) ) {
 	$lbar = 'repeat';
+    }
+    if ( my $d = $data->fn1(q{direction[@placement='above']//words} ) ) {
+	$awords = $d->to_literal;
+    }
+    if ( my $d = $data->fn1(q{direction[@placement='below']//words} ) ) {
+	$bwords = $d->to_literal;
     }
     if ( my $d = $data->fn1(q{direction//coda} ) ) {
 	$coda = 'coda';
@@ -293,6 +299,8 @@ sub process_measure {
 	    $rbar ? ( rbar => $rbar ) : (),
 	    $coda ? ( coda => $coda ) : (),
 	    $segno ? ( segno => $segno ) : (),
+	    $awords ? ( awords => $awords ) : (),
+	    $bwords ? ( bwords => $bwords ) : (),
 	  } );
 
     pop(@chords) while @chords && $chords[-1] eq "_";
@@ -428,6 +436,13 @@ sub to_irealpro {
 	    if ( my $segno = $m->{segno} ) {
 		$irp .= "," if $irp =~ /[[:alnum:]]$/;
 		$irp .= "S";
+	    }
+
+	    if ( my $awords = $m->{awords} ) {
+		$irp .= "<*72" . $awords . ">";
+	    }
+	    if ( my $bwords = $m->{bwords} ) {
+		$irp .= "<*" . $bwords . ">";
 	    }
 
 	    foreach my $c ( map { irpchord($_) } @{ $m->{chords} } ) {
