@@ -78,12 +78,24 @@ sub encode {
 	  if $self->{debug};
     }
 
+    if ( my $d = $rootnode->fn1('identification/encoding/software') ) {
+	$song->{software} = $d->to_literal;
+    }
+
+    if ( $song->{software} =~ /^musescore/i ) {
+	# MuseScore puts the title top center, and the composer bottom right.
+	my $composer = $rootnode->fn1(q{credit/credit-words} .
+				      q{[@valign='bottom'][@justify='right']});
+	$song->{composer} = $composer->to_literal
+	  if $composer;
+    }
+
     $self->{song} = $song;
 
     $self->_process( $rootnode, "part", \&process_part,
 		     { path => $root } );
 
-    use Data::iRealPro::Input::Text;
+    use DDumper; DDumper($self->{song});
 
     my $variant = 'irealpro';
     my $plname = "Import via MusicXML";
@@ -228,6 +240,33 @@ sub process_measure {
 	$ctx->{divisions} = $ctx->{_parent}->{divisions};
     }
 
+    my ( $lbar, $rbar, $ending, $segno, $coda );
+    if ( my $d = $data->fn1(q{barline[@location='left']/ending[@type='start']} ) ) {
+	foreach ( $d->attributes ) {
+	    next unless $_->getName eq "number";
+	    $ending = $_->getValue;
+	}
+    }
+    if ( my $d = $data->fn1(q{barline[@location='right']/repeat[@direction='backward']} ) ) {
+	$rbar = 'repeat';
+    }
+    if ( my $d = $data->fn1(q{barline[@location='left']/repeat[@direction='forward']} ) ) {
+	$lbar = 'repeat';
+    }
+    if ( my $d = $data->fn1(q{direction//coda} ) ) {
+	$coda = 'coda';
+	if ( $ctx->{_parent}->{has_coda} ) {
+	    push( @{ $self->{song}->{parts}->[-1]->{sections} },
+		  { measures => [] } );
+	    $this = $self->{song}->{parts}->[-1]->{sections}->[-1];
+	}
+	$ctx->{_parent}->{has_coda} = 1;
+    }
+
+    if ( my $d = $data->fn1(q{direction//segno} ) ) {
+	$segno = 'segno';
+    }
+
     # Process note and harmony nodes, in order.
     my ( $n, $h );
     $ctx->{currentbeat} = 0;
@@ -248,7 +287,13 @@ sub process_measure {
     }
     push( @{ $this->{measures} },
 	  { number => $data->fn1('@number')->to_literal,
-	    chords => [ @chords ] } );
+	    chords => [ @chords ],
+	    $ending ? ( ending => $ending ) : (),
+	    $lbar ? ( lbar => $lbar ) : (),
+	    $rbar ? ( rbar => $rbar ) : (),
+	    $coda ? ( coda => $coda ) : (),
+	    $segno ? ( segno => $segno ) : (),
+	  } );
 
     pop(@chords) while @chords && $chords[-1] eq "_";
     $lastchord = $chords[-1] if @chords;
@@ -352,8 +397,9 @@ sub to_irealpro {
     my $irp = "";
 
     foreach my $s ( @{ $part->{sections} } ) {
-	if ( $s->{mark} ) {
-	    $irp .= '[*' . $s->{mark};
+	if ( my $mark = $s->{mark} ) {
+	    $mark = 'A' unless $mark =~ /^[ABCD]$/;
+	    $irp .= '[*' . $mark;
 	}
 	else {
 	    $irp .= "[";
@@ -365,6 +411,25 @@ sub to_irealpro {
 	}
 
 	foreach my $m ( @{ $s->{measures} } ) {
+	    if ( my $lbar = $m->{lbar} ) {
+		$irp .= $lbar eq 'repeat' ? '{' : '|';
+	    }
+
+	    if ( my $ending = $m->{ending} ) {
+		$irp .= "," if $irp =~ /[[:alnum:]]$/;
+		$irp .= "N" . $ending;
+	    }
+
+	    if ( my $coda = $m->{coda} ) {
+		$irp .= "," if $irp =~ /[[:alnum:]]$/;
+		$irp .= "Q";
+	    }
+
+	    if ( my $segno = $m->{segno} ) {
+		$irp .= "," if $irp =~ /[[:alnum:]]$/;
+		$irp .= "S";
+	    }
+
 	    foreach my $c ( map { irpchord($_) } @{ $m->{chords} } ) {
 		if ( $c eq "_" ) {
 		    $irp .= " ";
@@ -374,7 +439,12 @@ sub to_irealpro {
 		    $irp .= $c;
 		}
 	    }
-	    $irp .= "|";
+	    if ( my $rbar = $m->{rbar} ) {
+		$irp .= $rbar eq 'repeat' ? '}' : '|';
+	    }
+	    else {
+		$irp .= "|";
+	    }
 	}
 	$irp =~ s/\|$//;
         $irp .= "]";
@@ -579,7 +649,9 @@ sub XML::LibXML::Node::fn {
 
 # Convenient short for single subnode. Returns a node.
 sub XML::LibXML::Node::fn1 {
-    my $nl = $_[0]->findnodes( './' . $_[1] . '[1]' );
+    my $expr = './' . $_[1] . '[1]';
+    $expr =~ s/^\.\/\[/[/;
+    my $nl = $_[0]->findnodes($expr);
     return unless $nl;
     $nl->[0];
 }
