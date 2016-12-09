@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Tue Dec  6 11:26:16 2016
-# Update Count    : 1506
+# Last Modified On: Fri Dec  9 22:54:09 2016
+# Update Count    : 1510
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -164,7 +164,8 @@ sub process {
 
     if ( $outtype eq "pdf" && eval { require PDF::API2 } ) {
 	$self->{pdf} = PDF::API2->new;
-	$self->{pdf}->mediabox( 0, PAGE_HEIGHT, PAGE_WIDTH, 0 );
+#	$self->{pdf}->mediabox( 0, PAGE_HEIGHT, PAGE_WIDTH, 0 );
+	$self->{pdf}->mediabox( 0, 0, PAGE_WIDTH, PAGE_HEIGHT );
     }
     elsif ( $outtype =~ /^png|jpg$/ && eval { require Imager } ) {
 	# ok
@@ -476,7 +477,7 @@ sub make_image {
 	    if ( /^repeatRight$/ ) {
 		$col = $red;
 		if ( ($i+1) % $numcols
-		     && $i < @$cells
+		     && $i < @$cells-1
 		     && $cells->[$i+1]->lbar
 		     && $cells->[$i+1]->lbar eq "repeatLeft" ) {
 		    $cells->[$i+1]->lbar = "repeatRightLeft";
