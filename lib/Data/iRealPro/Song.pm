@@ -285,8 +285,10 @@ sub tokenize {
 	elsif ( /^\240+/p ) {	# markup space
 	    $d->( "hspace " . length(${^MATCH}), " " );
 	}
-	elsif ( /^\<(?:\*(\d\d))?(.*?)\>/p ) { # text
-	    $d->( "text " . ( $1 || 0 ) . " " . $2 );
+	elsif ( /^\<(?:\*(\d\d))?(.*?)\>/ps ) { # text
+	    my $t = $2;
+	    $t =~ s/\s+$//;
+	    $d->( "text " . ( $1 || 0 ) . " " . $t );
 	}
 	elsif ( /^([\r\n]+)/p ) {
 	    # Silently ignore newlines.
