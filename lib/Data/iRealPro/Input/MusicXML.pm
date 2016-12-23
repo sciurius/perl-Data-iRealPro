@@ -95,7 +95,7 @@ sub encode {
     $self->_process( $rootnode, "part", \&process_part,
 		     { path => $root } );
 
-    use DDumper; DDumper($self->{song});
+    # use DDumper; DDumper($self->{song});
 
     my $variant = 'irealpro';
     my $plname = "Import via MusicXML";
@@ -447,11 +447,13 @@ sub to_irealpro {
 		$irp .= "S";
 	    }
 
-	    if ( my $awords = $m->{awords} ) {
-		$irp .= "<*72" . $awords . ">";
+	    if ( my $words = $m->{awords} ) {
+		$words =~ s/\s+$//;
+		$irp .= "<*72" . $words . ">";
 	    }
-	    if ( my $bwords = $m->{bwords} ) {
-		$irp .= "<*" . $bwords . ">";
+	    if ( my $words = $m->{bwords} ) {
+		$words =~ s/\s+$//;
+		$irp .= "<*00" . $words . ">";
 	    }
 
 	    foreach my $c ( map { irpchord($_) } @{ $m->{chords} } ) {
