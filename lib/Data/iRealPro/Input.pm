@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Tue Sep  6 16:09:10 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Fri Dec 23 08:35:54 2016
-# Update Count    : 64
+# Last Modified On: Fri Dec 23 08:45:36 2016
+# Update Count    : 66
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -18,7 +18,7 @@ use utf8;
 
 package Data::iRealPro::Input;
 
-our $VERSION = "1.01";
+our $VERSION = "1.02";
 
 use Data::iRealPro::URI;
 use Data::iRealPro::Input::Text;
@@ -97,7 +97,7 @@ sub parsedata {
 	if ( $data =~ /^Song( \d+)?:/ ) {
 	    $all = Data::iRealPro::Input::Text::encode( $self, $data );
 	}
-	elsif ( $data =~ /^<\?xml.*?>\s*<!doctype\s+score-partwise\s+/i ) {
+	elsif ( $data =~ /^(?:<\?xml.*?>\s*)?<!doctype\s+score-partwise\s+/i ) {
 	    require Data::iRealPro::Input::MusicXML;
 	    $all = Data::iRealPro::Input::MusicXML::encode( $self, $data );
 	}
