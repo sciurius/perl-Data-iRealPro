@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Tue Sep  6 16:09:10 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Wed Dec  7 21:06:43 2016
-# Update Count    : 61
+# Last Modified On: Fri Dec 23 08:35:54 2016
+# Update Count    : 64
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -23,6 +23,7 @@ our $VERSION = "1.01";
 use Data::iRealPro::URI;
 use Data::iRealPro::Input::Text;
 use Encode qw ( decode_utf8 );
+use File::Basename ();
 
 sub new {
     my ( $pkg, $options ) = @_;
@@ -56,6 +57,10 @@ sub parsefiles {
 
     my $all;
     foreach my $file ( @files ) {
+	unless ( $self->{playlist} ) {
+	    my @p = File::Basename::fileparse( $file,  qr/\.[^.]*/ );
+	    $self->{playlist} = $p[0];
+	}
 	my $u = $self->parsefile($file);
 	unless ( $all ) {
 	    $all = $u;
