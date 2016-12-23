@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Fri Dec  9 22:54:09 2016
-# Update Count    : 1510
+# Last Modified On: Thu Dec 15 21:46:53 2016
+# Update Count    : 1512
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -535,6 +535,7 @@ sub make_image {
 
 	    if ( FONTSX ) {
 		if ( $self->{pdf} ) {
+		    # $textfont->{' font'} = Font::TTF::Font
 		    for ( split( //, $t ) ) {
 			next if $textfont->uniByEnc(ord($_));
 			my $c = ord(substr($t,$i,1));
@@ -554,7 +555,7 @@ sub make_image {
 	    }
 
 	    my $hack;
-	    # Sometimes, THAI PAIYANNOI (U+2e7) is abused as
+	    # Sometimes, THAI PAIYANNOI (U+e2f) is abused as
 	    # MUSICAL SYMBOL EIGHTH REST (u+1d13e).
 	    $t =~ s/\x{e2f}/\x{1d13e}/g && $hack++;
 	    # Likewise CYRILLIC SMALL LETTER GHE WITH UPTURN (U+491)
