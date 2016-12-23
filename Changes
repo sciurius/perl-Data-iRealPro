@@ -1,5 +1,14 @@
 Revision history for Data-iRealPro
 
+1.03	2016-12-23
+
+	Add argument globbing for MS-Windows.
+	Strip trailing whitespace in texts.
+	Make <?xml ...> optional in MusicXML detection.
+	Fix inferring playlist name for multi-file input.
+	(Imager) Fix mediabox. Fix one-off error in last cell.
+	(MusicXML) Add --neatify.
+
 1.02	2016-12-07
 
 	Remove DDumper from MusicXML.
