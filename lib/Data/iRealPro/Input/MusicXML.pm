@@ -7,7 +7,7 @@ use utf8;
 
 package Data::iRealPro::Input::MusicXML;
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 
 use XML::LibXML;
 #use DDumper;
@@ -95,7 +95,7 @@ sub encode {
     $self->_process( $rootnode, "part", \&process_part,
 		     { path => $root } );
 
-#    use DDumper; DDumper($self->{song});
+    use DDumper; DDumper($self->{song});
 
     my $variant = 'irealpro';
     my $plname = "Import via MusicXML";
@@ -406,7 +406,7 @@ sub to_irealpro {
     my $ix = 0;
     my $bpm = 4;
     my $neatify = $self->{neatify} || 0;
-warn("XXX $neatify");
+
     foreach my $s ( @{ $part->{sections} } ) {
 	while ( $ix % 16 ) {
 	    $irp .= " " if $neatify;
