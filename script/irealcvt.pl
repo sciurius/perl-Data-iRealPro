@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Wed Dec  7 21:03:44 2016
-# Update Count    : 103
+# Last Modified On: Tue Dec 20 20:30:09 2016
+# Update Count    : 104
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -16,7 +16,7 @@ use warnings;
 use FindBin;
 use lib "$FindBin::Bin/../CPAN";
 use lib "$FindBin::Bin/../lib";
-use Data::iRealPro;
+use Data::iRealPro 1.02;
 use Data::iRealPro::Output;
 
 ################ Setup  ################
@@ -39,6 +39,7 @@ main($options);
 sub main {
     my ($options) = @_;
     binmode(STDERR,':utf8');
+    @ARGV = map { glob } @ARGV if $^O eq 'MSWin32';
     Data::iRealPro::Output->new($options)->processfiles(@ARGV);
 }
 
