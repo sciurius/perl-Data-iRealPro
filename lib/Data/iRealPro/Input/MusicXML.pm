@@ -7,7 +7,7 @@ use utf8;
 
 package Data::iRealPro::Input::MusicXML;
 
-our $VERSION = '0.05';
+our $VERSION = '0.06';
 
 use XML::LibXML;
 #use DDumper;
@@ -15,7 +15,6 @@ use Encode qw( decode_utf8 encode_utf8 );
 
 sub encode {
     my ( $self, $xml ) = @_;
-
     my $parser = XML::LibXML->new;
     my $opts = { no_cdata => 1 };
     if ( $self->{catalog} && -r  $self->{catalog} ) {
@@ -313,8 +312,11 @@ sub process_note {
     use Data::iRealPro::Input::MusicXML::Data qw( %durations );
 
     # Duration, in beats.
-    my $duration = $data->fn('duration')->[0]->to_literal
-      / $ctx->{divisions};
+    my $duration = 0;
+    unless ( $data->fn1("grace") ) {
+	$duration = $data->fn('duration')->[0]->to_literal
+	  / $ctx->{divisions};
+    }
     # Duration is the actual duration, dots included.
     # $duration *= 1.5 if $data->fn('dot');
 
@@ -337,7 +339,7 @@ sub process_note {
     printf STDERR ("Note %3d: %s %s x=%d d=%.2f s=%d\n",
 		   $note,
 		   $root,
-		   $data->fn('type')->[0]->to_literal,
+		   eval { $data->fn('type')->[0]->to_literal } || "notype",
 		   eval { $data->fn1('default-x')->to_literal } || 0,
 		   $duration,
 		   eval { $data->fn1('staff')->to_literal } || 1,
@@ -407,7 +409,9 @@ sub to_irealpro {
     my $bpm = 4;
     my $neatify = $self->{neatify} || 0;
 
+    my $secnum = 0;
     foreach my $s ( @{ $part->{sections} } ) {
+	$secnum++;
 	while ( $ix % 16 ) {
 	    $irp .= " " if $neatify;
 	    $ix++;
@@ -427,7 +431,10 @@ sub to_irealpro {
 	    $bpm = $1 if $s->{time} =~ /(^\d+)/;
 	}
 
+	my $barnum = 0;
 	foreach my $m ( @{ $s->{measures} } ) {
+	    $barnum++;
+
 	    if ( my $lbar = $m->{lbar} ) {
 		$irp .= $lbar eq 'repeat' ? '{' : '|';
 	    }
@@ -456,13 +463,28 @@ sub to_irealpro {
 		$irp .= "<*00" . $words . ">";
 	    }
 
-	    foreach my $c ( map { irpchord($_) } @{ $m->{chords} } ) {
-		if ( $c eq "_" ) {
+	    foreach my $c ( @{ $m->{chords} } ) {
+		my $mapped = 'n'; # N.C.
+		if ( defined $c ) {
+		    $mapped = irpchord($c);
+		    unless ( defined $mapped ) {
+			warn( sprintf( "Section %d, measure %d, ".
+				       "chord \"$c\" is not mappable to iRealPro\n",
+				       $secnum, $barnum ) );
+			$mapped = 'n';
+		    }
+		}
+		else {
+		    warn( sprintf( "Section %d, measure %d, ".
+				   "skipping undefined chord\n",
+				   $secnum, $barnum ) );
+		}
+		if ( $mapped eq "_" ) {
 		    $irp .= " ";
 		}
 		else {
 		    $irp .= "," if $irp =~ /[[:alnum:]]$/;
-		    $irp .= $c;
+		    $irp .= $mapped;
 		}
 	    }
 	    if ( my $rbar = $m->{rbar} ) {
@@ -614,7 +636,9 @@ sub irpchord {
 	$text .= $value;
     }
 
+    $text =~ s/sus47/7sus/;
     return $root . $text if exists $chordqual{$text};
+    return $root . '7alt' if $text eq "7b5#5b9#9";
     return $root . '*' . $text . '*';
 }
 
