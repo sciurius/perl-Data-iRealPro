@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Tue Dec 20 20:30:09 2016
-# Update Count    : 104
+# Last Modified On: Wed Mar  1 19:53:45 2017
+# Update Count    : 113
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -95,7 +95,12 @@ sub app_setup {
        transpose	=> 0,
        toc		=> undef,
        neatify		=> 0,
+
+       # XML frontend.
        catalog		=> "$FindBin::Bin/../res/catalog.xml",
+       'suppress-upbeat' => 1,
+       'override-alt'	=> 1,
+       condense		=> 1,
 
        # Development options (not shown with -help).
        debug		=> 0,		# debugging
@@ -121,7 +126,7 @@ sub app_setup {
 
 	  ### ADD OPTIONS HERE ###
 
-	  'output=s',
+	  'output|o=s',
 	  'select=i',
 	  'list',
 	  'split',
@@ -132,6 +137,9 @@ sub app_setup {
 	  'toc!',
 	  'catalog=s',
 	  'neatify=i',
+	  'condense!',
+	  'suppress-upbeat!',
+	  'override-alt',
 
 	  # # Configuration handling.
 	  # 'config=s',
@@ -196,15 +204,29 @@ irealcvt [options] file [...]
 			File name extension controls the output type.
     --select=NN		Select a single song from a playlist.
     --list		Prints the titles of the songs from a playlist.
+    --transpose=[+-]NN  -x  Transpose up/down semitones.
+
+  iRealPro (HTML) output options:
+
     --split		Splits the songs from a playlist into individual
 			HTML files. Use --dir to control where the
 			files will be written.
     --dir=XXX		Specifies the result directory for --split.
+
+  Imager (PDF/PNG) output options:
+
     --npp=[hand|hand_strict|standard]	Near pixel-perfect output.
-    --transpose=[+-]NN  -x	Transpose up/down semitones.
     --[no]toc		Produces [suppresses] the table of contents.
 
-Miscellaneous options:
+  MusicXML input options:
+
+    --[no-]suppress-upbeat  Suppress an initial upbeat (default).
+    --[no-]override-alt     Change series of alt modifications to a single
+			    'alt' quality (default).
+    --[no-]condense	    Condense chords that may not have enough
+			    space to be shown (default).
+
+  Miscellaneous options:
 
     --help  -h		this message
     --man		full documentation
@@ -327,6 +349,27 @@ With PDF output, produces or suppresses the table of contents.
 
 By default, A ToC is automatically generated if a playlist
 contains more than one song.
+
+=item B<-->[B<no->]B<suppress-upbeat>
+
+With MusicXML input, suppresses an initial upbeat. iRealPro doesn't
+deal with upbeats anyway.
+
+This is enabled by default.
+
+=item B<-->[B<no->]B<override-alt>
+
+With MusicXML input, replaces series of alt modifications (e.g.
+C<7b5#5b9#9>) with C<alt>.
+
+This is enabled by default.
+
+=item B<-->[B<no->]B<condense>
+
+With MusicXML input, uses condensed chords when there may not be
+sufficient space to show a chord without overlapping.
+
+This is enabled by default.
 
 =item B<--help>
 

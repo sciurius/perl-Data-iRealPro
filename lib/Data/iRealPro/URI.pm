@@ -6,7 +6,7 @@ use Carp;
 
 package Data::iRealPro::URI;
 
-our $VERSION = "1.00";
+our $VERSION = "1.01";
 
 use Data::iRealPro;
 use Data::iRealPro::Playlist;
@@ -135,7 +135,7 @@ EOD
 sub esc {
     # We must encode first before the uri-escape.
     my $t = encode_utf8($_[0]);
-    $t =~ s/([^-_."A-Z0-9a-z*\/\'])/sprintf("%%%02X", ord($1))/ge;
+    $t =~ s/([^-_.A-Z0-9a-z*\/\'])/sprintf("%%%02X", ord($1))/ge;
     return $t;
 }
 

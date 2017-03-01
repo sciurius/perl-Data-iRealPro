@@ -1,5 +1,15 @@
 Revision history for Data-iRealPro
 
+1.05	2017-03-01
+
+	Improvements to MusicXML import.
+	Implement --condense, --override-alt and --suppress-upbeat for
+	MusicXML input.
+
+1.04	2017-02-28
+
+	Small fixes in URI encoding.
+
 1.03	2016-12-23
 
 	Add argument globbing for MS-Windows.

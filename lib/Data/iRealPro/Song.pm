@@ -6,7 +6,7 @@ use Carp;
 
 package Data::iRealPro::Song;
 
-our $VERSION = "1.00";
+our $VERSION = "1.01";
 
 use Encode qw( encode_utf8 );
 
@@ -567,7 +567,7 @@ sub export {
     }
     if ( $args{html} || $args{uriencode} || !defined( $args{uriencode} ) ) {
 	$r = encode_utf8($r);
-	$r =~ s/([^-_."A-Z0-9a-z*\/\'])/sprintf("%%%02X", ord($1))/ge;
+	$r =~ s/([^-_.A-Z0-9a-z*\/\'])/sprintf("%%%02X", ord($1))/ge;
     }
     return $r;
 }

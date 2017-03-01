@@ -11,7 +11,7 @@ Data::iRealPro - Convert iRealBook/iRealPro data
 
 =cut
 
-our $VERSION = "1.03";
+our $VERSION = "1.05";
 
 =head1 SYNOPSIS
 
@@ -82,7 +82,7 @@ The iRealPro community, for contributing many, many songs.
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2013,2016 Johan Vromans, all rights reserved.
+Copyright 2013,2017 Johan Vromans, all rights reserved.
 
 Clone me at L<GitHub|https://github.com/sciurius/perl-Data-iRealPro>
 

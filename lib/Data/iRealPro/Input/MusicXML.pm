@@ -7,7 +7,7 @@ use utf8;
 
 package Data::iRealPro::Input::MusicXML;
 
-our $VERSION = '0.05';
+our $VERSION = '0.06';
 
 use XML::LibXML;
 #use DDumper;
@@ -49,7 +49,7 @@ sub encode {
 
     # print DDumper($data);
 
-    $self = bless { neatify => $self->{neatify} }, __PACKAGE__;
+    $self = bless { %$self }, __PACKAGE__;
 
     my $root = "/score-partwise";
     my $rootnode = $data->findnodes($root)->[0];
@@ -313,8 +313,11 @@ sub process_note {
     use Data::iRealPro::Input::MusicXML::Data qw( %durations );
 
     # Duration, in beats.
-    my $duration = $data->fn('duration')->[0]->to_literal
-      / $ctx->{divisions};
+    my $duration = 0;
+    unless ( $data->fn1("grace") ) {
+	$duration = $data->fn('duration')->[0]->to_literal
+	  / $ctx->{divisions};
+    }
     # Duration is the actual duration, dots included.
     # $duration *= 1.5 if $data->fn('dot');
 
@@ -337,7 +340,7 @@ sub process_note {
     printf STDERR ("Note %3d: %s %s x=%d d=%.2f s=%d\n",
 		   $note,
 		   $root,
-		   $data->fn('type')->[0]->to_literal,
+		   eval { $data->fn('type')->[0]->to_literal } || "notype",
 		   eval { $data->fn1('default-x')->to_literal } || 0,
 		   $duration,
 		   eval { $data->fn1('staff')->to_literal } || 1,
@@ -406,8 +409,12 @@ sub to_irealpro {
     my $ix = 0;
     my $bpm = 4;
     my $neatify = $self->{neatify} || 0;
+    my $suppress_upbeat = $self->{'suppress-upbeat'} || 0;
+    my $condense = $self->{condense} || 0;
 
+    my $secnum = 0;
     foreach my $s ( @{ $part->{sections} } ) {
+	$secnum++;
 	while ( $ix % 16 ) {
 	    $irp .= " " if $neatify;
 	    $ix++;
@@ -427,7 +434,10 @@ sub to_irealpro {
 	    $bpm = $1 if $s->{time} =~ /(^\d+)/;
 	}
 
+	my $barnum = 0;
 	foreach my $m ( @{ $s->{measures} } ) {
+	    $barnum++;
+
 	    if ( my $lbar = $m->{lbar} ) {
 		$irp .= $lbar eq 'repeat' ? '{' : '|';
 	    }
@@ -456,15 +466,67 @@ sub to_irealpro {
 		$irp .= "<*00" . $words . ">";
 	    }
 
-	    foreach my $c ( map { irpchord($_) } @{ $m->{chords} } ) {
-		if ( $c eq "_" ) {
-		    $irp .= " ";
+	    if ( $suppress_upbeat
+		 && $barnum == 1
+		 && ( !@{ $m->{chords} }
+		      || join("",@{$m->{chords}}) eq ("_" x $bpm)
+		    ) ) {
+		$barnum = 0;
+		next;
+	    }
+
+	    my @c;
+	    foreach my $c ( @{ $m->{chords} } ) {
+		my $mapped = 'n'; # N.C.
+		if ( defined $c ) {
+		    $mapped = $self->irpchord($c);
+		    unless ( defined $mapped ) {
+			warn( sprintf( "Section %d, measure %d, ".
+				       "chord \"$c\" is not mappable to iRealPro\n",
+				       $secnum, $barnum ) );
+			$mapped = 'n';
+		    }
 		}
 		else {
-		    $irp .= "," if $irp =~ /[[:alnum:]]$/;
-		    $irp .= $c;
+		    warn( sprintf( "Section %d, measure %d, ".
+				   "skipping undefined chord\n",
+				   $secnum, $barnum ) );
+		}
+		push( @c, $mapped eq '_' ? " " : $mapped );
+	    }
+
+	    if ( $condense ) {
+		my $c = "";
+		foreach my $i ( 0 .. $#c ) {
+		    if ( $c[$i] eq " " ) {
+			$c .= " ";
+			next;
+		    }
+		    $c .= "," if $c =~ /[[:alnum:]]$/;
+		    # If there is space, append as normal.
+		    if ( $i < $#c && $c[$i+1] eq " " ) {
+			$c .= $c[$i];
+		    }
+		    # Otherwise, append condensed.
+		    else {
+			$c .= "s" . $c[$i] . "l";
+		    }
+		}
+		# Small optimalisation for adjacent condensed entries.
+		$c =~ s/l,s/,/g;
+		warn(qq{"$c"\n});
+
+		# Append to output.
+		$irp .= "," if $irp =~ /[[:alnum:]]$/;
+		$irp .= $c;
+	    }
+	    else {
+		foreach ( @c ) {
+		    $irp .= "," if $irp =~ /[[:alnum:]]$/ && $_ ne ' ';
+		    $irp .= $_;
 		}
 	    }
+
 	    if ( my $rbar = $m->{rbar} ) {
 		$irp .= $rbar eq 'repeat' ? '}' : '|';
 	    }
@@ -590,11 +652,11 @@ my %chordqual =
      "h9"		=> 'h9',
      "o"		=> 'o',
      "o7"		=> 'o7',
-     "sus"		=> 'sus',
+     "sus4"		=> 'sus',
   );
 
 sub irpchord {
-    my ( $c ) = @_;
+    my ( $self, $c ) = @_;
     return $c unless ref($c) eq 'ARRAY';
     my ( $root, $quality, $text, $degree ) = @$c;
     if ( exists $harmony_kinds{$quality} ) {
@@ -614,7 +676,15 @@ sub irpchord {
 	$text .= $value;
     }
 
+    # Prefer 7sus to sus47.
+    $text =~ s/sus47/7sus/;
+
     return $root . $text if exists $chordqual{$text};
+
+    # Override weird combinations of degree alterations with 'alt'.
+    return $root . '7alt' if $self->{'override-alt'} && $text eq "7b5#5b9#9";
+
+    # Otherwise, yield the quality as text.
     return $root . '*' . $text . '*';
 }
 

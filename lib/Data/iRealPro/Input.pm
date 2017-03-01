@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Tue Sep  6 16:09:10 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Fri Dec 23 08:45:36 2016
-# Update Count    : 66
+# Last Modified On: Wed Mar  1 13:42:38 2017
+# Update Count    : 70
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -18,7 +18,7 @@ use utf8;
 
 package Data::iRealPro::Input;
 
-our $VERSION = "1.02";
+our $VERSION = "1.03";
 
 use Data::iRealPro::URI;
 use Data::iRealPro::Input::Text;
@@ -31,7 +31,7 @@ sub new {
     my $self = bless( { variant => "irealpro" }, $pkg );
 
     for ( qw( trace debug verbose output variant transpose
-	      neatify select ) ) {
+	      neatify select suppress-upbeat override-alt noclash ) ) {
 	$self->{$_} = $options->{$_} if exists $options->{$_};
     }
 
@@ -57,6 +57,7 @@ sub parsefiles {
 
     my $all;
     foreach my $file ( @files ) {
+	warn("Parsing: $file...\n") if $self->{verbose};
 	unless ( $self->{playlist} ) {
 	    my @p = File::Basename::fileparse( $file,  qr/\.[^.]*/ );
 	    $self->{playlist} = $p[0];
