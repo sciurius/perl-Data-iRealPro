@@ -51,3 +51,5 @@ t/32-chords.t
 pp/Makefile.lnx
 pp/Makefile.msw
 pp/irealcvt.pp
+META.yml                                 Module YAML meta-data (added by MakeMaker)
+META.json                                Module JSON meta-data (added by MakeMaker)

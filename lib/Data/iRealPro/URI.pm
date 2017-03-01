@@ -55,6 +55,7 @@ sub as_string {
     if ( $uriesc ) {
 	$s = esc($s);
     }
+    warn("irealb://" . $s);
     "irealb://" . $s;
 }
 

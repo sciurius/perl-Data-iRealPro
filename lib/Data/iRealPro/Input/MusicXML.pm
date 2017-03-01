@@ -15,7 +15,6 @@ use Encode qw( decode_utf8 encode_utf8 );
 
 sub encode {
     my ( $self, $xml ) = @_;
-
     my $parser = XML::LibXML->new;
     my $opts = { no_cdata => 1 };
     if ( $self->{catalog} && -r  $self->{catalog} ) {
