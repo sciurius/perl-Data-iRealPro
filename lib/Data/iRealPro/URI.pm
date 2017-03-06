@@ -6,7 +6,7 @@ use Carp;
 
 package Data::iRealPro::URI;
 
-our $VERSION = "1.01";
+our $VERSION = "1.02";
 
 use Data::iRealPro;
 use Data::iRealPro::Playlist;
@@ -55,7 +55,7 @@ sub as_string {
     if ( $uriesc ) {
 	$s = esc($s);
     }
-    warn("irealb://" . $s);
+#    warn("irealb://" . $s);
     "irealb://" . $s;
 }
 

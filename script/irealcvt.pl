@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Wed Mar  1 19:53:45 2017
-# Update Count    : 113
+# Last Modified On: Mon Mar  6 16:30:04 2017
+# Update Count    : 120
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -35,6 +35,8 @@ $options->{verbose} = 1 if $options->{trace};
 main($options);
 
 ################ The Process ################
+
+use File::Glob qw(:bsd_glob);
 
 sub main {
     my ($options) = @_;
@@ -99,6 +101,7 @@ sub app_setup {
        # XML frontend.
        catalog		=> "$FindBin::Bin/../res/catalog.xml",
        'suppress-upbeat' => 1,
+       'suppress-text'  => 0,
        'override-alt'	=> 1,
        condense		=> 1,
 
@@ -139,6 +142,7 @@ sub app_setup {
 	  'neatify=i',
 	  'condense!',
 	  'suppress-upbeat!',
+	  'suppress-text!',
 	  'override-alt',
 
 	  # # Configuration handling.
@@ -221,6 +225,7 @@ irealcvt [options] file [...]
   MusicXML input options:
 
     --[no-]suppress-upbeat  Suppress an initial upbeat (default).
+    --[no-]suppress-text    Suppress all texts.
     --[no-]override-alt     Change series of alt modifications to a single
 			    'alt' quality (default).
     --[no-]condense	    Condense chords that may not have enough

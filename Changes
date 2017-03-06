@@ -1,5 +1,11 @@
 Revision history for Data-iRealPro
 
+1.06	2017-03-06
+
+	Improvements to MusicXML import.
+	Implement --suppress-text for MusicXML input.
+	Fix wildcard expansion on Windows.
+
 1.05	2017-03-01
 
 	Improvements to MusicXML import.

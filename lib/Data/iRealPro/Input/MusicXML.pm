@@ -7,7 +7,7 @@ use utf8;
 
 package Data::iRealPro::Input::MusicXML;
 
-our $VERSION = '0.06';
+our $VERSION = '0.07';
 
 use XML::LibXML;
 #use DDumper;
@@ -410,6 +410,7 @@ sub to_irealpro {
     my $neatify = $self->{neatify} || 0;
     my $suppress_upbeat = $self->{'suppress-upbeat'} || 0;
     my $condense = $self->{condense} || 0;
+    my $suppress_text = $self->{'suppress-text'} || 0;
 
     my $secnum = 0;
     foreach my $s ( @{ $part->{sections} } ) {
@@ -456,13 +457,15 @@ sub to_irealpro {
 		$irp .= "S";
 	    }
 
-	    if ( my $words = $m->{awords} ) {
-		$words =~ s/\s+$//;
-		$irp .= "<*72" . $words . ">";
-	    }
-	    if ( my $words = $m->{bwords} ) {
-		$words =~ s/\s+$//;
-		$irp .= "<*00" . $words . ">";
+	    unless ( $suppress_text ) {
+		if ( my $words = $m->{awords} ) {
+		    $words =~ s/\s+$//;
+		    $irp .= "<*72" . $words . ">";
+		}
+		if ( my $words = $m->{bwords} ) {
+		    $words =~ s/\s+$//;
+		    $irp .= "<*00" . $words . ">";
+		}
 	    }
 
 	    if ( $suppress_upbeat
@@ -513,7 +516,7 @@ sub to_irealpro {
 		}
 		# Small optimalisation for adjacent condensed entries.
 		$c =~ s/l,s/,/g;
-		warn(qq{"$c"\n});
+		warn(qq{"$c"\n}) if $self->{debug};
 
 		# Append to output.
 		$irp .= "," if $irp =~ /[[:alnum:]]$/;
