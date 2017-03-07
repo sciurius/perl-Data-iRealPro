@@ -6,7 +6,7 @@ use Carp;
 
 package Data::iRealPro::Song;
 
-our $VERSION = "1.01";
+our $VERSION = "1.02";
 
 use Encode qw( encode_utf8 );
 
@@ -359,7 +359,8 @@ sub make_cells {
 	}
 
 	if ( $t eq "end repeat" ) {
-	    $cells->[-2]->rbar = "repeatRight";
+	    $cells->[-2]->rbar = "repeatRight"
+	      if @$cells >= 2;
 	    next;
 	}
 
@@ -376,17 +377,20 @@ sub make_cells {
 	# |Bh7 E7b9 ZY|QA- |
 	if ( $t eq "vspace" ) {
 	    $vspace++;
-	    $cells->[-1]->vs = $vspace;
+	    $cells->[-1]->vs = $vspace
+	      if @$cells >= 1;
 	    next;
 	}
 
 	if ( $t eq "end" ) {
-	    $cells->[-2]->rbar = "barlineFinal";
+	    $cells->[-2]->rbar = "barlineFinal"
+	      if @$cells >= 2;
 	    next;
 	}
 
 	if ( $t eq "end section" ) {
-	    $cells->[-2]->rbar = "barlineDouble";
+	    $cells->[-2]->rbar = "barlineDouble"
+	      if @$cells >= 2;
 	    next;
 	}
 
@@ -408,7 +412,8 @@ sub make_cells {
 		    $cell->subchord = $1;
 		}
 		else {
-		    $cells->[-2]->subchord = $1;
+		    $cells->[-2]->subchord = $1
+		      if @$cells >= 2;
 		    next;
 		}
 	    }
