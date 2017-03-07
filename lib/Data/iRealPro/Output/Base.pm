@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Mon Oct  3 08:13:17 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Mon Mar  6 16:31:46 2017
-# Update Count    : 29
+# Last Modified On: Tue Mar  7 11:25:47 2017
+# Update Count    : 31
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -18,7 +18,7 @@ use utf8;
 
 package Data::iRealPro::Output::Base;
 
-our $VERSION = "1.02";
+our $VERSION = "1.03";
 
 sub new {
     my ( $pkg, $options ) = @_;
@@ -36,7 +36,7 @@ sub options {
     # The list of options this backend can handle.
     # Note that 'output' is handled by Output.pm.
     [ qw( trace debug verbose variant playlist catalog neatify select
-	  suppress-upbeat suppress-text override-alt condense
+	  musescore suppress-upbeat suppress-text override-alt condense
         ) ]
 }
 

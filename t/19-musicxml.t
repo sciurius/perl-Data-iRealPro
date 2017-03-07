@@ -446,7 +446,7 @@ is( scalar(@{$pl->{songs}}), 1, "Got one song" );
 my $res = $u->as_string(1);
 
 my $exp = <<'EOD';
-irealb://Bloomdido%3DParker%20Charlie%3D%3DRock%20Ballad%3DC%3D%3D1r34LbKcu7B%7CQyXBb7XyQyX7bE%7CQyX7bB%7CyQX7bBZL7F%207-C%7CQ%7CEb-7%2C44T%5Bb7XyQ%7CC%23-7XyQ%7CC-7XyQ%7CF7XyQ%7CBb7XyQ%7CC-7%20F7%20%5D%3D%3D100%3D0%3D%3D%3DImport%20via%20MusicXML
+irealb://Bloomdido%3DParker%20Charlie%3D%3DRock%20Ballad%3DBb%3D%3D1r34LbKcu7B%7CQyXBb7XyQyX7bE%7CQyX7bB%7CyQX7bBZL7F%207-C%7CQ%7CEb-7%2C44T%5Bb7XyQ%7CC%23-7XyQ%7CC-7XyQ%7CF7XyQ%7CBb7XyQ%7CC-7%20F7%20%5D%20%3D%3D100%3D0%3D%3D%3DImport%20via%20MusicXML
 EOD
 chomp($exp);
 

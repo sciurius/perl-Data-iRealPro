@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Thu Dec 15 21:46:53 2016
-# Update Count    : 1512
+# Last Modified On: Tue Mar  7 11:18:15 2017
+# Update Count    : 1513
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -28,7 +28,7 @@ use Data::Dumper;
 use Text::CSV_XS;
 use Encode qw( encode_utf8 );
 
-use constant FONTSX => 1;
+use constant FONTSX => 0;
 
 sub new {
     my ( $pkg, $options ) = @_;

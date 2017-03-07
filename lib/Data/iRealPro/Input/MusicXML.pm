@@ -55,7 +55,6 @@ sub encode {
 
     my $song = { title => 'NoName',
 		 composer => 'NoBody',
-		 key => 'C',
 		 tempo => 100,
 		 index => $self->{songix},
 		 parts => [] };
@@ -82,6 +81,7 @@ sub encode {
     }
 
     if ( $song->{software} =~ /^musescore/i ) {
+	$self->{musescore} //= 1;
 	# MuseScore puts the title top center, and the composer bottom right.
 	my $composer = $rootnode->fn1(q{credit/credit-words} .
 				      q{[@valign='bottom'][@justify='right']});
@@ -164,6 +164,13 @@ sub process_measure {
     foreach ( @{ $data->fn('direction/direction-type/rehearsal') } ) {
 	$mark = $_->to_literal;
     }
+    if ( !$mark && $self->{musescore} ) {
+	foreach ( @{ $data->fn(q{direction/direction-type/words[@enclosure='rectangle']}) } ) {
+	    $mark = $_->to_literal;
+	}
+    }
+
+=begin xxx
 
     if ( $mark ) {
 	push( @{ $this->{sections} },
@@ -172,7 +179,16 @@ sub process_measure {
     elsif ( @{ $this->{sections} } == 0 ) {
 	$this->{sections} = [ { measures => [] } ];
     }
+
+=cut
+
+    if ( @{ $this->{sections} } == 0 ) {
+	$this->{sections} = [ { measures => [] } ];
+    }
     $this = $this->{sections}->[-1];
+    if ( $mark ) {
+	$this->{mark} = $mark;
+    }
 
     my $clef = "";
     my $mode = "major";
@@ -367,6 +383,8 @@ sub process_harmony {
 	$tquality = $d->to_literal;
     }
 
+    my $bass = eval { $data->fn1('bass/bass-step')->to_literal };
+
     my @d;
     foreach ( @{ $data->fn('degree') } ) {
 	push( @d, [ $_->fn1('degree-value')->to_literal,
@@ -374,11 +392,13 @@ sub process_harmony {
 		    $_->fn1('degree-type')->to_literal ] );
     }
 
-    printf STDERR ( "Harm %3d: %s%s %s\n",
-		    $harmony, $root, $quality, $tquality )
+    printf STDERR ( "Harm %3d: %s%s%s %s\n",
+		    $harmony, $root, $quality,
+		    $bass ? "/$bass" : "",
+		    $tquality )
       if $self->{debug};
 
-    return [ $root, $quality, $tquality, @d ? \@d : () ];
+    return [ $root, $quality, $tquality, $bass, @d ? \@d : () ];
 
 }
 
@@ -386,7 +406,6 @@ sub process_harmony {
 
 sub to_irealpro {
     my ( $self, $song, $part ) = @_;
-
     my $variant = 'irealpro';
 
     # Build the song...
@@ -410,7 +429,8 @@ sub to_irealpro {
     my $neatify = $self->{neatify} || 0;
     my $suppress_upbeat = $self->{'suppress-upbeat'} || 0;
     my $condense = $self->{condense} || 0;
-    my $suppress_text = $self->{'suppress-text'} || 0;
+    my $musescore = $self->{musescore} || 0;
+    my $suppress_text = $self->{'suppress-text'} || $musescore;
 
     my $secnum = 0;
     foreach my $s ( @{ $part->{sections} } ) {
@@ -478,6 +498,11 @@ sub to_irealpro {
 	    }
 
 	    my @c;
+	    if ( $bpm < 4 ) {
+		# Align 3/4 to 4/4.
+		push( @{ $m->{chords} }, "_" ) while @{ $m->{chords} } < 4;
+	    }
+
 	    foreach my $c ( @{ $m->{chords} } ) {
 		my $mapped = 'n'; # N.C.
 		if ( defined $c ) {
@@ -541,6 +566,7 @@ sub to_irealpro {
         $irp .= "]";
     }
 
+    $irp .= " ";
     $sung->{data} = $irp;
 
     # And deliver.
@@ -660,7 +686,7 @@ my %chordqual =
 sub irpchord {
     my ( $self, $c ) = @_;
     return $c unless ref($c) eq 'ARRAY';
-    my ( $root, $quality, $text, $degree ) = @$c;
+    my ( $root, $quality, $text, $bass, $degree ) = @$c;
     if ( exists $harmony_kinds{$quality} ) {
 	$text = $harmony_kinds{$quality};
     }
@@ -678,16 +704,19 @@ sub irpchord {
 	$text .= $value;
     }
 
+    $bass = $bass ? "/$bass" : "";
+
     # Prefer 7sus to sus47.
     $text =~ s/sus47/7sus/;
 
-    return $root . $text if exists $chordqual{$text};
+    return $root . $text . $bass if exists $chordqual{$text};
 
     # Override weird combinations of degree alterations with 'alt'.
-    return $root . '7alt' if $self->{'override-alt'} && $text eq "7b5#5b9#9";
+    return $root . '7alt' . $bass
+      if $self->{'override-alt'} && $text eq "7b5#5b9#9";
 
     # Otherwise, yield the quality as text.
-    return $root . '*' . $text . '*';
+    return $root . '*' . $text . $bass . '*';
 }
 
 ################ Time Signatures ################

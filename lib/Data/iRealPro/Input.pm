@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Tue Sep  6 16:09:10 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Mon Mar  6 16:31:52 2017
-# Update Count    : 74
+# Last Modified On: Tue Mar  7 11:25:23 2017
+# Update Count    : 76
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -18,7 +18,7 @@ use utf8;
 
 package Data::iRealPro::Input;
 
-our $VERSION = "1.04";
+our $VERSION = "1.05";
 
 use Data::iRealPro::URI;
 use Data::iRealPro::Input::Text;
@@ -32,7 +32,7 @@ sub new {
 
     for ( qw( trace debug verbose output variant transpose
 	      neatify select suppress-upbeat suppress-text
-	      override-alt condense ) ) {
+	      musescore override-alt condense ) ) {
 	$self->{$_} = $options->{$_} if exists $options->{$_};
     }
 
