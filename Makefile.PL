@@ -30,6 +30,7 @@ WriteMakefile
 		    'Text::CSV_XS' => 1.19,
 		    'JSON::PP'	   => 2.27300,
 		    'HTML::Entities' => 3.69,
+		    'App::Packager' => 1.420,
 		    # 'XML::LibXML'  => 2.0120, # assumed
 		   },
  BUILD_REQUIRES  => {
@@ -41,11 +42,8 @@ WriteMakefile
  META_MERGE => {
      'meta-spec' => { version => 2 },
      resources        => {
-	 repository   => {
-	     type => 'git',
-	     url  => 'git://github.com/sciurius/perl-Data-iRealPro',
-	     web  => 'https://github.com/sciurius/perl-Data-iRealPro',
-         },
+	 repository => "https://github.com/sciurius/perl-Data-iRealPro",
+	 bugtracker => "https://github.com/sciurius/perl-Data-iRealPro/issues",
      },
  },
 
