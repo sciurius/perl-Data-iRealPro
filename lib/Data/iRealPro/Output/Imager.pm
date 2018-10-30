@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Tue Oct 30 09:41:22 2018
-# Update Count    : 1516
+# Last Modified On: Tue Oct 30 10:28:19 2018
+# Update Count    : 1517
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -124,10 +124,10 @@ my $fonts =
     textfont  => $_default_font,
     markfont  => "DroidSans-Bold.ttf",
     # Normal and condensed versions
-#    chordfont => "Myriad-CnSemibold.ttf",
-#    chrdfont  => "Myriad-UcnSemibold.ttf",
-    chordfont => "FreeSansBold.ttf",
-    chrdfont  => "FreeSansCn.ttf",
+    chordfont => "Myriad-CnSemibold.ttf",
+    chrdfont  => "Myriad-UcnSemibold.ttf",
+#    chordfont => "FreeSansBold.ttf",
+#    chrdfont  => "FreeSansCn.ttf",
     musicfont => "Bravura.ttf",
     muscfont  => "BravuraCn.ttf",
   };
