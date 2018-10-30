@@ -37,7 +37,7 @@ WriteMakefile
 		    'Test::More'   => 1.001014,
 		   },
 
- MIN_PERL_VERSION => '5.010000',
+ MIN_PERL_VERSION => '5.010001',
  LICENSE => 'perl',
  META_MERGE => {
      'meta-spec' => { version => 2 },

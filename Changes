@@ -2,6 +2,7 @@ Revision history for Data-iRealPro
 
 1.10	2018-10-30
 
+	Add --transpose option.
 	More user friendly error messages when required modules
 	PDF::API and Imager are missing.
 
