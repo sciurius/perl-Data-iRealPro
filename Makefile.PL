@@ -42,7 +42,11 @@ WriteMakefile
  META_MERGE => {
      'meta-spec' => { version => 2 },
      resources        => {
-	 repository => "https://github.com/sciurius/perl-Data-iRealPro",
+	 repository => {
+		type => 'git',
+		url  => "https://github.com/sciurius/perl-Data-iRealPro.git",
+		web  => "https://github.com/sciurius/perl-Data-iRealPro",
+	 },
 	 bugtracker => "https://github.com/sciurius/perl-Data-iRealPro/issues",
      },
  },
