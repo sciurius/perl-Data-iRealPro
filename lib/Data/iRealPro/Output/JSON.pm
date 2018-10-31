@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Tue Dec  6 10:22:35 2016
-# Update Count    : 1094
+# Last Modified On: Wed Oct 31 22:07:57 2018
+# Update Count    : 1096
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -20,7 +20,7 @@ package Data::iRealPro::Output::JSON;
 
 use parent qw( Data::iRealPro::Output::Base );
 
-our $VERSION = "1.01";
+our $VERSION = "1.02";
 
 use JSON::PP;
 
@@ -42,7 +42,7 @@ sub process {
     };
 
     # Process the song(s).
-    my @goners = qw( variant debug a2 data raw_tokens cells );
+    my @goners = qw( variant debug a2 data raw_tokens cells transpose );
     for my $item ( $u, $u->{playlist} ) {
 	delete( $item->{$_} ) for @goners;
     }
