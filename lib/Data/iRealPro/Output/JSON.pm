@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Wed Oct 31 22:07:57 2018
-# Update Count    : 1096
+# Last Modified On: Wed Oct 31 22:19:40 2018
+# Update Count    : 1097
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -56,6 +56,10 @@ sub process {
     }
     if ( ref( $self->{output} ) ) {
 	${ $self->{output} } = $json->encode($u);
+    }
+    elsif ( $self->{output} eq "-" ) {
+	binmode( STDOUT, ':utf8' );
+	print( $json->encode($u) );
     }
     else {
 	open( my $fd, ">:utf8", $self->{output} )
