@@ -3,8 +3,8 @@
 # Author          : Johan Vromans
 # Created On      : Tue Mar  3 11:09:45 2015
 # Last Modified By: Johan Vromans
-# Last Modified On: Mon Oct 10 14:52:21 2016
-# Update Count    : 338
+# Last Modified On: Thu Nov  1 10:02:25 2018
+# Update Count    : 341
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -28,7 +28,7 @@ use Data::iRealPro::Input;
 use FindBin;
 
 my $my_package = "Sciurix";
-my ($my_name, $my_version) = qw( iRealPro/Web 0.06 );
+my ($my_name, $my_version) = qw( iRealPro/Web 0.07 );
 
 print "Content-Type: text/html\n\n";
 
@@ -40,6 +40,9 @@ my $uri = $q->param("uri");
 my $npp = $q->param("npp");
 
 ################ Presets ################
+
+my @majkeys = split( ' ', 'C  Dd  D  Eb E   F  Gb  G  Ab A   Bb B'   );
+my @minkeys = split( ' ', 'A- Bb- B- C- C#- D- Eb- E- F- F#- G- G#-' );
 
 # print CGI::Dump(), "\n";
 
@@ -129,6 +132,8 @@ foreach my $s ( @{ $u->{playlist}->{songs} } ) {
 		    $s->{actual_style}
 		    ? ( " (", $s->{actual_style}, ")" ) : (),
 		    $s->{key} ? ( "; key: ", $s->{key} ) : (),
+		    "; actual key: ",
+		    $s->{key} =~ /-$/ ? $minkeys[$s->{actual_key}] : $majkeys[$s->{actual_key}],
 		    $s->{actual_tempo}
 		    ? ( "; tempo: ", $s->{actual_tempo} ) : (),
 		    $s->{actual_repeats} && $s->{actual_repeats} > 1
