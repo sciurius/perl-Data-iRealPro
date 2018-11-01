@@ -9,8 +9,6 @@ package Data::iRealPro::Output::LilyPond;
 
 use parent qw( Data::iRealPro::Output::Base );
 
-our $VERSION = "0.02";
-
 use Data::iRealPro::URI;
 use Data::Dumper;
 
