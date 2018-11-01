@@ -58,6 +58,7 @@ WriteMakefile
      no_index => {
          directory => [
 	    "lib/Data/iRealPro",
+	    "lib/App",
 	 ],
      },
  },

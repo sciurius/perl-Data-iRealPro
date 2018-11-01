@@ -4,6 +4,7 @@ Makefile.PL
 README
 script/irealcvt.pl
 script/pp.PL
+lib/App/Packager.pm
 lib/Data/iRealPro.pm
 lib/Data/iRealPro/Bundle.pm
 lib/Data/iRealPro/Input.pm
