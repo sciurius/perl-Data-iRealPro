@@ -3,8 +3,8 @@
 # Author          : Johan Vromans
 # Created On      : Tue Mar  3 11:09:45 2015
 # Last Modified By: Johan Vromans
-# Last Modified On: Thu Nov  1 10:02:25 2018
-# Update Count    : 341
+# Last Modified On: Thu Nov  1 19:25:49 2018
+# Update Count    : 342
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -140,8 +140,6 @@ foreach my $s ( @{ $u->{playlist}->{songs} } ) {
 		    ? ( "; repeat: ", $s->{actual_repeats} ) : (),
 		    $s->{a2}
 		    ? ( "; a2: ", $s->{a2} ) : (),
-		    $s->{actual_key}
-		    ? ( "; actual key: ", Data::iRealPro::Song->actual_key($s->{actual_key}) ) : (),
 		  ),
 	    cooked => $s->{data},
 	    rows => 10,
