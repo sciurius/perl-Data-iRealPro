@@ -6,7 +6,7 @@
 PP := perl -S pp
 
 irealcvt :
-	${PP} --output=irealcvt @irealcvt.pp ../script/irealcvt
+	${PP} --output=irealcvt @irealcvt.pp ../../script/irealcvt.pl
 
 clean ::
 	rm -f *.pp.deps *~ irealcvt
