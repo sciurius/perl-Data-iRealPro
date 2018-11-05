@@ -3,8 +3,8 @@
 # Author          : Johan Vromans
 # Created On      : Tue Mar  3 11:09:45 2015
 # Last Modified By: Johan Vromans
-# Last Modified On: Thu Nov  1 19:25:49 2018
-# Update Count    : 342
+# Last Modified On: Mon Nov  5 22:03:33 2018
+# Update Count    : 343
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -18,7 +18,7 @@ use lib "/home/jv/src/Data-iRealPro/CPAN";
 use lib "/home/jv/src/Data-iRealPro/lib";
 
 chdir("/home/jv/src/Data-iRealPro/cgi-bin");
-$ENV{FONTDIR} = "../fonts";
+$ENV{FONTDIR} = "res/fonts";
 
 use Template::Tiny;
 use Data::iRealPro::URI;

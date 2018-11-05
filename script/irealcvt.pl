@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Mon Nov  5 15:17:09 2018
-# Update Count    : 129
+# Last Modified On: Mon Nov  5 21:34:36 2018
+# Update Count    : 130
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -49,7 +49,7 @@ sub main {
 
 ################ Options and Configuration ################
 
-use Getopt::Long 2.13 qw( :config no_ignorecase );
+use Getopt::Long 2.13;
 use File::Spec;
 use Carp;
 
