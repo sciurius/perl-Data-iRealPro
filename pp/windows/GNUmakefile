@@ -1,5 +1,5 @@
-# nmake file for MS Windows + CitrusPerl
+# gmake file for MS Windows
 
 irealcvt.exe : irealcvt.pp
-	pp --output=irealcvt.exe @irealcvt.pp ../bin/iReal2pdf
+	pp --output=irealcvt.exe @irealcvt.pp ../../script/irealcvt.pl
 

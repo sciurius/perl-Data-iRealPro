@@ -3,6 +3,5 @@
 --lib=../common
 --module=Data::iRealPro::Bundle
 --module=PDF_API2_Bundle
---module=Imager_Bundle
 --addfile=../../lib/Data/iRealPro/res;res
 --cachedeps=irealcvt.pp.deps
