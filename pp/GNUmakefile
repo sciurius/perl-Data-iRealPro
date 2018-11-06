@@ -7,5 +7,5 @@ to_tmp :
 	rsync -avH --files-from=../MANIFEST ../ ${TMP_DST}/
 
 to_tmp_cpan :
-	rsync -avH --files-from=MANIFEST.CPAN ../ ${TMP_DST}/
+	rsync -rptgov --files-from=MANIFEST.CPAN ../ ${TMP_DST}/
 
