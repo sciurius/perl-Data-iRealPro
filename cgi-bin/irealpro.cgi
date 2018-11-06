@@ -3,8 +3,8 @@
 # Author          : Johan Vromans
 # Created On      : Tue Mar  3 11:09:45 2015
 # Last Modified By: Johan Vromans
-# Last Modified On: Mon Nov  5 22:03:33 2018
-# Update Count    : 343
+# Last Modified On: Tue Nov  6 08:28:03 2018
+# Update Count    : 344
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -132,8 +132,9 @@ foreach my $s ( @{ $u->{playlist}->{songs} } ) {
 		    $s->{actual_style}
 		    ? ( " (", $s->{actual_style}, ")" ) : (),
 		    $s->{key} ? ( "; key: ", $s->{key} ) : (),
-		    "; actual key: ",
-		    $s->{key} =~ /-$/ ? $minkeys[$s->{actual_key}] : $majkeys[$s->{actual_key}],
+		    $s->{actual_key} ne ''
+		    ? ( "; actual key: ",
+			$s->{key} =~ /-$/ ? $minkeys[$s->{actual_key}] : $majkeys[$s->{actual_key}] ) : (),
 		    $s->{actual_tempo}
 		    ? ( "; tempo: ", $s->{actual_tempo} ) : (),
 		    $s->{actual_repeats} && $s->{actual_repeats} > 1

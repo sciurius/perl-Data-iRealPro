@@ -81,7 +81,6 @@ sub parse {
 
     # Correct for iReal key transposition.
     if ( $self->{actual_key} eq '' ) {
-	$self->{actual_key} = $keymap{$self->{key}};
 	$self->{_transpose} = 0;
     }
     else {
