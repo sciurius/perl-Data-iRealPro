@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Mon Jan  7 08:20:16 2019
 # Last Modified By: Johan Vromans
-# Last Modified On: Sun Jan 20 21:59:26 2019
-# Update Count    : 479
+# Last Modified On: Sun Jan 20 22:22:42 2019
+# Update Count    : 481
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -217,7 +217,7 @@ EOD
 			    push( @chords, chord2mma($1) );
 			}
 			elsif ( $j =~ /^advance / ) {
-			    next;
+			    push( @chords, "/" );
 			}
 			elsif ( $j =~ /^time\s+(\S+)/ ) {
 			    warn("Time signature change: $time -> $1\n")
@@ -239,6 +239,9 @@ EOD
 		    elsif ( @chords == 2 ) {
 			splice( @chords, 1, 0, ("/") x int($time_d/2) );
 		    }
+		}
+		while ( $chords[-1] eq "/" ) {
+		    pop(@chords);
 		}
 		$res .= " @chords";
 		$res .= "   /* " . $item->{jump}->{text} ." */"

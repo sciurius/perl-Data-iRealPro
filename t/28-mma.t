@@ -58,7 +58,7 @@ RepeatEnd
 RepeatEnding
   3 D7
 RepeatEnding 2
-  4 D7 / / Dm
+  4 D7 / Dm
 RepeatEnd
   5 G7
   6 A
