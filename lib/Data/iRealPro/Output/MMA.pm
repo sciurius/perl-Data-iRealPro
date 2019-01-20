@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Mon Jan  7 08:20:16 2019
 # Last Modified By: Johan Vromans
-# Last Modified On: Sat Jan 19 23:13:55 2019
-# Update Count    : 476
+# Last Modified On: Sun Jan 20 21:59:26 2019
+# Update Count    : 479
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -672,15 +672,21 @@ my %chordqual =
    'v9x11'	   => 'M9#11',
   );
 
+my $pc;
+
 sub chord2mma {
     my ( $chord ) = @_;
-
-    #### TODO: Need some kind of mapping table.
 
     my $bass;
     if ( $chord =~ m;^(.+)/(.+)$; ) {
 	$bass = $2;
 	$chord = $1;
+    }
+    if ( $chord eq "W" ) {
+	$chord = $pc;
+    }
+    else {
+	$pc = $chord;
     }
 
     if ( $chord =~ /^N\.?C\.?/ ) {
@@ -739,68 +745,3 @@ sub isjump {
 }
 
 1;
-
-__END__
-
-Analysis of repeats
-
-  { A | B } => A B A B
-  Repeat
-  A
-  B
-  RepeatEnd
-  
-  { A | B 2x } => A B A B
-  Repeat
-  A
-  B
-  RepeatEnd
-  
-  { A | B 3x } => A B A B A B
-  Repeat
-  A
-  B
-  RepeatEnd 3
-  
-  [ A | B } => { A | B }
-  
-  { A | B | N1 C } N2 D         => A B C A B D
-  Repeat
-  A
-  B
-  RepeatEnding
-  C
-  RepeatEnd
-  D
-  
-  { A | B } N1 C } N2 D         => A B A B C A B A B D
-  Repeat
-  Repeat
-  A
-  B
-  RepeatEnd
-  RepeatEnding
-  C
-  RepeatEnd
-  D
-  
-  { A | B | N1 C } N2 D } N3 E  => A B C A B D A B E
-  Repeat
-  A
-  B
-  RepeatEnding
-  C
-  RepeatEnding
-  D
-  RepeatEnd
-  E
-  
-  { A | B | N1 C } N3 E         => A B C A B C A B E
-  Repeat
-  A
-  B
-  RepeatEnding 2
-  C
-  RepeatEnd
-  E
-  
