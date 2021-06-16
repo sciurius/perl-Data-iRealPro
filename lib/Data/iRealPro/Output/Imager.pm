@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Mon Nov  5 21:33:13 2018
-# Update Count    : 1520
+# Last Modified On: Wed Jun 16 16:18:53 2021
+# Update Count    : 1596
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -44,6 +44,10 @@ sub new {
     $self->{fontdir} .= "/";
     $self->{fontdir} =~ s;/+$;/;;
 
+    # Standout and text colours.
+    $self->{_so} = "red";
+    $self->{_tc} = "red";
+
     if ( $options->{npp} ) {
 	die( "Unsupported output type for NPP. Please select PNG or JPG.\n")
 	  unless $options->{output} =~ /\.(jpg|png)$/i;
@@ -68,6 +72,14 @@ sub new {
 	}
 	warn("Using NPP images from ", $self->{prefab}, "\n")
 	  if $options->{verbose};
+
+#	$options->{colmap} = "8GBGorange4GM8GRG1KR";
+	if ( $options->{colmap} ) {
+	    $self->{colmap} = make_colours( $options->{colmap} );
+	    # Standout and text colours.
+	    $self->{_so} = pop( @{ $self->{colmap} } );
+	    $self->{_tc} = pop( @{ $self->{colmap} } );
+	}
     }
 
     for ( qw( trace debug verbose output variant transpose toc crop
@@ -91,7 +103,7 @@ sub new {
 
 sub options {
     my $self = shift;
-    [ @{ $self->SUPER::options }, qw( transpose npp ) ];
+    [ @{ $self->SUPER::options }, qw( transpose npp colmap crop ) ];
 }
 
 # A4 image format.
@@ -127,7 +139,6 @@ my $fonts =
 
 # Colors.
 my $black = "#000000";
-my $red   = "#ff0000";
 my $blue  = "#0000ff";
 
 sub process {
@@ -420,6 +431,13 @@ sub make_image {
     pop( @$cells )
       while $cells->[-1] && keys( %{ $cells->[-1] } ) == 1;
 
+    die( "Incorrect number of colours in map (",
+	 scalar(@{$self->{colmap}}),
+	 ", need ",
+	 scalar(@$cells),
+	 ")\n" ) if $self->{colmap}
+	   && @{$self->{colmap}} != @$cells;
+
     # Process the cells.
     for ( my $i = 0; $i < @$cells; $i++ ) {
 	# {{{
@@ -465,7 +483,7 @@ sub make_image {
 		next;
 	    }
 
-	    my $col = /^repeat(?:Right)?Left$/ ? $red : $black;
+	    my $col = /^repeat(?:Right)?Left$/ ? $self->{_so} : $black;
 	    $self->glyphc( $x, $y, $_, undef, $col );
 	    next;
 	}
@@ -480,7 +498,7 @@ sub make_image {
 
 	    my $col = $black;
 	    if ( /^repeatRight$/ ) {
-		$col = $red;
+		$col = $self->{_so};
 		if ( ($i+1) % $numcols
 		     && $i < @$cells-1
 		     && $cells->[$i+1]->lbar
@@ -516,9 +534,9 @@ sub make_image {
 	    $t2 =~ s/(\d)/sprintf( "%c",$w+ord($1) )/ge;
 
 	    $self->textc( $x, $y-0.55*$musicsize, $t1,
-			  0.7*$musicsize, $musicfont, $red );
+			  0.7*$musicsize, $musicfont, $self->{_so} );
 	    $self->textc( $x, $y-0.15*$musicsize, $t2,
-			  0.7*$musicsize, $musicfont, $red );
+			  0.7*$musicsize, $musicfont, $self->{_so} );
 	    next;
 	}
 
@@ -530,7 +548,7 @@ sub make_image {
 	    }
 
 	    $self->glyphl( $x+0.15*$musicsize, $y-1.05*$musicsize,
-			   $_, 0.7*$musicsize, $red );
+			   $_, 0.7*$musicsize, $self->{_so} );
 	    next;
 	}
 
@@ -573,13 +591,13 @@ sub make_image {
 	    # Displacement is 0 .. 74, in steps of 3.
 	    if ($self->{npp} ) {
 		$self->textl( $x-2, $y + $dy - 27 - ($dy / 74) * $disp, $t,
-			      $hack ? 60 : 74, $textfont, $red );
+			      $hack ? 60 : 74, $textfont, $self->{_tc} );
 		next;
 	    }
 
 	    $self->textl( $x+0.15*$musicsize,
 			  $y+0.55*$musicsize-($disp/(45/$musicsize)),
-			  $t, 0.55*$musicsize, $textfont, $red );
+			  $t, 0.55*$musicsize, $textfont, $self->{_tc} );
 	    next;
 	}
 
@@ -587,6 +605,8 @@ sub make_image {
 	    next unless $_;
 	    my $c = $_;
 	    my $font = $cell->sz ? $chrdfont : $chordfont;
+	    my $curcol = $black;
+	    $curcol = $self->{colmap}->[$i] if $self->{colmap};
 
 	    if ( $c =~ /repeat\dBars?/ ) {
 
@@ -599,10 +619,10 @@ sub make_image {
 		if ( $self->{npp_strict} ) {
 		    $x += $dx;
 		    if (  $c eq "repeat1Bar" ) {
-			$self->npp_repeat( $x, $y, 1 );
+			$self->npp_repeat( $x, $y, 1, $curcol );
 		    }
 		    else {
-			$self->npp_repeat( $x, $y, 2 );
+			$self->npp_repeat( $x, $y, 2, $curcol );
 		    }
 		}
 		elsif ( $c eq "repeat1Bar"
@@ -629,10 +649,10 @@ sub make_image {
 		    $x += ( $nb-$pb+1 ) * $dx/2;
 		    if ( $self->{npp} ) {
 			if (  $c eq "repeat1Bar" ) {
-			    $self->npp_repeat( $x, $y, 1 );
+			    $self->npp_repeat( $x, $y, 1, $curcol );
 			}
 			else {
-			    $self->npp_repeat( $x, $y, 2 );
+			    $self->npp_repeat( $x, $y, 2, $curcol );
 			}
 		    }
 		    else {
@@ -654,7 +674,7 @@ sub make_image {
 		    # Overprint next barline.
 		    $x += ( $nb-$i+1 ) * $dx;
 		    if ( $self->{npp} ) {
-			$self->npp_repeat( $x, $y, 2 );
+			$self->npp_repeat( $x, $y, 2, $curcol );
 		    }
 		    else {
 			$self->textc( $x, ($y-0.3*$musicsize),
@@ -666,7 +686,7 @@ sub make_image {
 
 	    if ( $c =~ /^repeat(Slash)$/ ) {
 		if ( $self->{npp} ) {
-		    $self->npp_slash( $x, $y );
+		    $self->npp_slash( $x, $y, $curcol );
 		}
 		else {
 		    $self->textl( $x+0.4*$musicsize, $y, "/", $chordsize, $chordfont );
@@ -676,7 +696,9 @@ sub make_image {
 
 	    if ( $self->{npp} ) {
 		$self->npp_chord( $x, $y, $c,
-				  $cell->sz ? CHORD_CONDENSED : CHORD_NORMAL );
+				  $cell->sz ? CHORD_CONDENSED : CHORD_NORMAL,
+				  $curcol,
+				);
 	    }
 	    else {
 		$self->chord( $x+0.15*$musicsize, $y, $c, $musicsize, $font );
@@ -686,8 +708,9 @@ sub make_image {
 
 	for ( $cell->subchord ) {
 	    next unless $_;
+	    my $curcol = $self->{colmap}->[$i];
 	    if ( $self->{npp} ) {
-		$self->npp_chord( $x, $y, $_, CHORD_ALTERNATIVE );
+		$self->npp_chord( $x, $y, $_, CHORD_ALTERNATIVE, $curcol );
 	    }
 	    else {
 		$self->chord( $x+0.15*$musicsize, $y-$musicsize,
@@ -705,15 +728,15 @@ sub make_image {
 	    }
 
 	    $self->textl( $x+0.15*$musicsize, $y-$musicsize, $n . ".",
-			  0.55*$musicsize, $textfont, $red ) if $n;
+			  0.55*$musicsize, $textfont, $self->{_so} ) if $n;
 	    $self->line( $x+0.1*$musicsize,
 			 $y-$musicsize,
 			 $x+0.1*$musicsize,
-			 $y-1.5*$musicsize, $red );
+			 $y-1.5*$musicsize, $self->{_so} );
 	    $self->line( $x+0.1*$musicsize,
 			 $y-1.5*$musicsize,
 			 $x+2*$dx,
-			 $y-1.5*$musicsize, $red );
+			 $y-1.5*$musicsize, $self->{_so} );
 	    next;
 	}
 
@@ -742,7 +765,7 @@ sub make_image {
 	    $t = "In" if $t eq 'i';
 	    $t = "V" if $t eq 'v';
 	    $self->textl( $x-0.3*$musicsize, $y-0.9*$musicsize, $t,
-			  0.6*$musicsize, $markfont, $red );
+			  0.6*$musicsize, $markfont, $self->{_so} );
 	    next;
 	}
 
@@ -1149,7 +1172,7 @@ sub initfonts {
 ################ NPP routines ################
 
 sub npp_chord {
-    my ( $self, $x, $y, $c, $flags ) = @_;
+    my ( $self, $x, $y, $c, $flags, $col ) = @_;
     my ( $root, $quality, $bass ) = $self->xchord($c);
 
     # Flags: 0x00   normal
@@ -1159,7 +1182,7 @@ sub npp_chord {
     #               condensed alternate is the same as alternate
 
     if ( $c eq "NC" ) {
-	my $img = $self->getimg("root_nc");
+	my $img = $self->getimg( "root_nc", $col );
 	$x += 29;
 	$y += 41;
 	if ( $flags & CHORD_CONDENSED ) {
@@ -1179,7 +1202,7 @@ sub npp_chord {
 		      $self->{stitlesize}, $self->{stitlefont} );
 	$c = $1.$3;
     }
-    my $img = $self->chordimg( $c, $flags );
+    my $img = $self->chordimg( $c, $flags, $col );
     if ( $flags & CHORD_ALTERNATIVE ) {
 	$self->{im}->rubthrough( src => $img,
 				 tx => $x + 9, ty => $y - 98 );
@@ -1260,8 +1283,8 @@ sub npp_mark {
 }
 
 sub npp_repeat {
-    my ( $self, $x, $y, $n ) = @_;
-    my $r = $self->getimg("root_" . ("x" x $n));
+    my ( $self, $x, $y, $n, $col ) = @_;
+    my $r = $self->getimg("root_" . ("x" x $n), $col);
     my $w = $r->getwidth;
     $self->{im}->rubthrough( src => $r,
 			     tx => $x - $w/2 - 8,
@@ -1286,16 +1309,18 @@ sub npp_sign {
 }
 
 sub npp_slash {
-    my ( $self, $x, $y ) = @_;
-    $self->{im}->rubthrough( src => $self->getimg("root_slash"),
+    my ( $self, $x, $y, $col ) = @_;
+    $self->{im}->rubthrough( src => $self->getimg("root_slash", $col),
 			     tx => $x, ty => $y );
 }
 
 my %npp_imgcache;
 
 sub getimg {
-    my ( $self, $img ) = @_;
-    return $npp_imgcache{$img} if $npp_imgcache{$img};
+    my ( $self, $img, $col ) = @_;
+    $col //= "black";
+    my $tag = "$img|$col";
+    return $npp_imgcache{$tag} if $npp_imgcache{$tag};
 
     my $if = $self->{prefab} . $img . ".png";
 
@@ -1310,42 +1335,52 @@ sub getimg {
 	}
     }
 
-    my $red = 0;
     unless ( -s $if ) {
-	$red = 1;
+	$col = "grey";
 	warn("Substituting <notfound> for \"$img\"\n");
 	$if = $self->{prefab} . "quality_h.png";
 	$if =~ s/\.png/_hand.png/ if $self->{npp} eq "hand";
     }
-    $npp_imgcache{$img} = Imager->new( file => $if )
+    $npp_imgcache{$tag} = Imager->new( file => $if )
       or die( Imager->errstr );
 
     # Some symbols are rendered in red.
-    $red ||=  $img =~ /^ (?:
-			   .*rehearsal_mark_. |
-			   repeat_barline_(?:open|close) |
-			   time_signature_.. |
-			   ending_.* |
-			   coda | fermata | segno
-		       ) $/x;
+    $col = $self->{_so}
+      if $img =~ /^ (?:
+		      .*rehearsal_mark_. |
+		      repeat_barline_(?:open|close) |
+		      time_signature_.. |
+		      ending_.* |
+		      coda | fermata | segno
+		  ) $/x;
 
     # The barline images are white instead of black. Reverse.
-    $npp_imgcache{$img}->map( all => [ reverse( 0..255) ], alpha => [] )
+    $npp_imgcache{$tag}->map( all => [ reverse( 0..255) ], alpha => [] )
       if $img =~ /(single|double)_barline/;
 
     # Colourize if necessary.
-    $npp_imgcache{$img}->map( red => [ reverse( 0..255) ] ) if $red;
+    if ( $col ne 'black' ) {
+	my $m = [ reverse 0..255 ];
+	my @c = map { $_/255 } Imager::Color->new($col)->rgba;
+	$npp_imgcache{$tag}->map
+	  ( maps => [ [ map { $_*$c[0] } @$m ],
+		      [ map { $_*$c[1] } @$m ],
+		      [ map { $_*$c[2] } @$m ],
+		      [] ] );
+    }
 
-    return $npp_imgcache{$img};
+    return $npp_imgcache{$tag};
 }
 
 sub chordimg {
-    my ( $self, $chord, $flags ) = @_;
+    my ( $self, $chord, $flags, $col ) = @_;
+    $col //= "black";
     my ( $root, $quality, $bass ) = $self->xchord($chord);
 
     my $img = join( "|", "", $root, $quality||"", $bass||"",
 		         sprintf("%d", $flags), "" );
-    return $npp_imgcache{$img} if $npp_imgcache{$img};
+    my $tag = "$img|$col";
+    return $npp_imgcache{$tag} if $npp_imgcache{$tag};
 
     my $im = Imager->new( xsize => 218,
 			  ysize => 262,
@@ -1358,11 +1393,11 @@ sub chordimg {
 
     my $dx = $flags & CHORD_ALTERNATIVE ? 6 : 0;
     my $dy = $flags & CHORD_ALTERNATIVE ? -6 : 0;
-    $im->rubthrough( src => $self->getimg("root_$root"),
+    $im->rubthrough( src => $self->getimg("root_$root", $col),
 		     tx => 0, ty => 0 );
-    $im->rubthrough( src => $self->getimg("root_$acc"),
+    $im->rubthrough( src => $self->getimg("root_$acc", $col),
 		     tx => 0, ty => 0 ) if $acc;
-    $im->rubthrough( src => $self->getimg("quality_$quality"),
+    $im->rubthrough( src => $self->getimg("quality_$quality", $col),
 		     tx => 84, ty => $dy+80 ) if $quality;
 
     if ( $bass ) {
@@ -1376,13 +1411,13 @@ sub chordimg {
 	$dy -= 5 if $flags & CHORD_ALTERNATIVE;
 	my $sc = $flags & CHORD_CONDENSED ? 0.68 : 0.65;
 	my $sc2 = $flags & CHORD_CONDENSED ? 0.58 : 0.55;
-	$im->rubthrough( src => $self->getimg("root_$root")
+	$im->rubthrough( src => $self->getimg("root_$root", $col)
 			 ->scale( scalefactor => $sc ),
 			 tx => $dx+65, ty => $dy+153 );
-	$im->rubthrough( src => $self->getimg("root_$acc")
+	$im->rubthrough( src => $self->getimg("root_$acc", $col)
 			 ->scale( scalefactor => $sc ),
 			 tx => $dx+65, ty => $dy+177 ) if $acc;
-	$im->rubthrough( src => $self->getimg("root_slash")
+	$im->rubthrough( src => $self->getimg("root_slash", $col)
 			 ->scale( xscalefactor => 0.85,
 				  yscalefactor => $sc2 ),
 			 tx => $dx+0, ty => 142 );
@@ -1391,7 +1426,39 @@ sub chordimg {
     $im = $im->scale( xscalefactor => 0.7, yscalefactor => 1 ) if $flags & CHORD_CONDENSED;
     $im = $im->scale( xscalefactor => 0.62, yscalefactor => 0.62 ) if $flags & CHORD_ALTERNATIVE;
 
-    return $npp_imgcache{$img} = $im;
+    return $npp_imgcache{$tag} = $im;
+}
+
+my %_m = ( R => "red",    G => "green",   B => "blue",
+	   Y => "yellow", M => "magenta", C => "cyan",
+	   K => "black" );
+
+sub make_colours {
+    my $s =  shift;
+    my @c;
+    my $repeat = 1;
+    while ( length($s) ) {
+	if ( $s =~ s/^(\d+),?// ) {
+	    $repeat = $1;
+	    next;
+	}
+	if ( $s =~ s/^,// ) {
+	    push( @c, $c[-1] ) for 1..$repeat;
+	    next;
+	}
+	if ( $s =~ s/^([RGBYMCK]),?// ) {
+	    push( @c, $_m{$1} ) for 1..$repeat;
+	    next;
+	}
+	if ( $s =~ s/^([[:lower:]]+),?// ) {
+	    push( @c, $1 ) for 1..$repeat;
+	    next;
+	}
+	else {
+	    die($s);
+	}
+    }
+    return \@c;
 }
 
 1;
