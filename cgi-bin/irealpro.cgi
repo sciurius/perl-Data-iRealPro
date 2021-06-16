@@ -3,8 +3,8 @@
 # Author          : Johan Vromans
 # Created On      : Tue Mar  3 11:09:45 2015
 # Last Modified By: Johan Vromans
-# Last Modified On: Tue Nov  6 08:28:03 2018
-# Update Count    : 344
+# Last Modified On: Mon Mar 22 09:55:11 2021
+# Update Count    : 346
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -19,6 +19,7 @@ use lib "/home/jv/src/Data-iRealPro/lib";
 
 chdir("/home/jv/src/Data-iRealPro/cgi-bin");
 $ENV{FONTDIR} = "res/fonts";
+$ENV{RESDIR} = "res";
 
 use Template::Tiny;
 use Data::iRealPro::URI;
@@ -66,7 +67,7 @@ my $v = $u->{variant};
 $v =~ s/^(.)(....)(.*)/$1.ucfirst($2).ucfirst($3)/e;
 
 my $irp_site = "http://www.irealpro.com";
-my $irp_icon = "$irp_site/wp-content/uploads/2013/10/irealpro-icon.png";
+my $irp_icon = "irealpro-icon.png";
 
 $tv->{site}->{name} = "$v Song viewer";
 $tv->{irp}->{site} = $irp_site;
