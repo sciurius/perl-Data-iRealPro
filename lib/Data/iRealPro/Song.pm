@@ -80,7 +80,7 @@ sub parse {
     $tokstring = $self->{raw};
 
     # Correct for iReal key transposition.
-    if ( $self->{actual_key} eq '' ) {
+    if ( $self->{variant} eq "irealbook" || $self->{actual_key} eq '' ) {
 	$self->{_transpose} = 0;
     }
     else {
