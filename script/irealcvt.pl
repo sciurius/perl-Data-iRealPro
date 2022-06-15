@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Wed Jun 16 16:24:50 2021
-# Update Count    : 139
+# Last Modified On: Tue Jun 14 19:17:56 2022
+# Update Count    : 142
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -141,6 +141,11 @@ sub app_setup {
 	  'dir=s',
 	  'playlist=s',
 	  'npp=s',
+	  'embed',
+	  'width=i',
+	  'height=i',
+	  'rows=i',
+	  'colums|cols=i',
 	  'colmap=s',
 	  'crop',
 	  'transpose|x=i',
