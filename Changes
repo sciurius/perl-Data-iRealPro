@@ -4,6 +4,7 @@ Revision history for Data-iRealPro
 
 	Implement colouring of the individual NPP glyphs.
 	Add --crop command line argument.
+	WIP: Allow pictures suitable for embedding.
 	Improvements for MMA output.
 	Prevent undefined warning if no playlist.
 

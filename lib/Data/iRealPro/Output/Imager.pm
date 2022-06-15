@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Wed Jun 16 16:18:53 2021
-# Update Count    : 1596
+# Last Modified On: Tue Jun 14 22:35:16 2022
+# Update Count    : 1618
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -27,6 +27,8 @@ use Text::CSV_XS;
 use Encode qw( encode_utf8 );
 
 use constant FONTSX => 0;
+my $CANVAS_WIDTH  = 1920;
+my $CANVAS_HEIGHT = 2480;
 
 sub new {
     my ( $pkg, $options ) = @_;
@@ -47,6 +49,14 @@ sub new {
     # Standout and text colours.
     $self->{_so} = "red";
     $self->{_tc} = "red";
+
+    if ( $options->{embed} ) {
+	$self->{embed} = $options->{embed};
+	$options->{output} //= "__embed__.png";
+	$options->{crop} = 1;
+	$CANVAS_WIDTH = $options->{width} if $options->{width};
+	$CANVAS_HEIGHT = $options->{height} if $options->{height};
+    }
 
     if ( $options->{npp} ) {
 	die( "Unsupported output type for NPP. Please select PNG or JPG.\n")
@@ -103,7 +113,8 @@ sub new {
 
 sub options {
     my $self = shift;
-    [ @{ $self->SUPER::options }, qw( transpose npp colmap crop ) ];
+    [ @{ $self->SUPER::options }, qw( transpose npp colmap crop
+				      embed width height rows colums ) ];
 }
 
 # A4 image format.
@@ -113,8 +124,8 @@ use constant PAGE_HEIGHT => 842;
 # NPP operations are done on a fixed canvas. Eventually, the result
 # will be scaled or split to match the desired output dimensions.
 
-use constant CANVAS_WIDTH  => 1920;
-use constant CANVAS_HEIGHT => 2480;
+sub CANVAS_WIDTH()  { $CANVAS_WIDTH  }
+sub CANVAS_HEIGHT() { $CANVAS_HEIGHT }
 
 # Scaling for bitmap graphics to get finer images. Not for NPP.
 sub scale($) { 2*$_[0] };
@@ -329,7 +340,7 @@ sub make_image {
     if ( $self->{npp} ) {
 	$lm = 68;
 	$rm = 0;		# unused
-	$tm = 208;
+	$tm = $self->{embed} ? 80 : 208;
 	$dx = ( CANVAS_WIDTH - $lm - 18 ) / 16;
 	$dy = 296;
 	if ( $self->{npp} eq 'hand' ) {
@@ -392,7 +403,7 @@ sub make_image {
     # Draw headings for a new page.
     my $newpage = sub {
 	$self->newpage;
-
+	return if $self->{embed};
 	my $titlesize = $self->{titlesize};
 	my $titlefont = $self->{titlefont};
 	my $stitlesize = $self->{stitlesize};
