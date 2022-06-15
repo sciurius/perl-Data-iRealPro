@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Tue Sep  6 16:09:10 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Wed Nov 14 21:35:40 2018
-# Update Count    : 82
+# Last Modified On: Tue Jun 14 22:31:48 2022
+# Update Count    : 83
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -67,7 +67,7 @@ sub parsefiles {
 	}
 	unless ( $plname ) {
 	    $plname = $all->{playlist}->{name};
-	    $plname = "" if $plname eq "<NoName>";
+	    $plname = "" if $plname && $plname eq "<NoName>";
 	}
 	unless ( $plname ) {
 	    my @p = File::Basename::fileparse( $file,  qr/\.[^.]*/ );
