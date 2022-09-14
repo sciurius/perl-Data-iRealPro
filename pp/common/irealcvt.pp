@@ -3,5 +3,8 @@
 --lib=../common
 --module=Data::iRealPro::Bundle
 --module=PDF_API2_Bundle
+--module=Imager
+--module=Imager::Font::FT2
+--module=Imager::File::PNG
 --addfile=../../lib/Data/iRealPro/res;res
 --cachedeps=irealcvt.pp.deps
