@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Tue Sep  6 14:58:26 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Tue Nov 13 10:31:13 2018
-# Update Count    : 98
+# Last Modified On: Wed Sep 14 15:59:49 2022
+# Update Count    : 107
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -121,6 +121,10 @@ sub encode_song {
 	$tv->{actual_style} = $2;
     }
 
+    if ( $data =~ /Colou?r[mM]ap:\s+(\S+)\s*(?:;|$)/m ) {
+	$tv->{colmap} = $1;
+    }
+
     if ( $data =~ /; key:\s+([^;\n]+)/ ) {
 	$tv->{key} = $1;
     }
@@ -152,6 +156,7 @@ sub encode_song {
 	actual_tempo   => $tv->{actual_tempo},
 	actual_style   => $tv->{actual_style},
 	actual_repeats => $tv->{actual_repeats},
+	colmap         => $tv->{colmap} // $self->{colmap},
 	transpose      => $self->{transpose},
 	_transpose     => $tv->{_transpose} // 0,
      );

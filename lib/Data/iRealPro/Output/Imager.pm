@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Tue Jun 14 22:35:16 2022
-# Update Count    : 1618
+# Last Modified On: Wed Sep 14 17:14:47 2022
+# Update Count    : 1644
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -46,10 +46,6 @@ sub new {
     $self->{fontdir} .= "/";
     $self->{fontdir} =~ s;/+$;/;;
 
-    # Standout and text colours.
-    $self->{_so} = "red";
-    $self->{_tc} = "red";
-
     if ( $options->{embed} ) {
 	$self->{embed} = $options->{embed};
 	$options->{output} //= "__embed__.png";
@@ -85,10 +81,7 @@ sub new {
 
 #	$options->{colmap} = "8GBGorange4GM8GRG1KR";
 	if ( $options->{colmap} ) {
-	    $self->{colmap} = make_colours( $options->{colmap} );
-	    # Standout and text colours.
-	    $self->{_so} = pop( @{ $self->{colmap} } );
-	    $self->{_tc} = pop( @{ $self->{colmap} } );
+	    $self->{colmap} = $options->{colmap};
 	}
     }
 
@@ -442,12 +435,21 @@ sub make_image {
     pop( @$cells )
       while $cells->[-1] && keys( %{ $cells->[-1] } ) == 1;
 
+    $self->{_so} = "red";
+    $self->{_tc} = "red";
+    $self->{_cm} = [];
+
+    for ( $song->{colmap} // $self->{colmap} ) {
+	next unless $_;
+	$self->{_cm} = make_colours($_);
+	$self->{_so} = pop( @{ $self->{_cm} } );
+	$self->{_tc} = pop( @{ $self->{_cm} } );
+    }
     die( "Incorrect number of colours in map (",
-	 scalar(@{$self->{colmap}}),
+	 scalar(@{ $self->{_cm} }),
 	 ", need ",
 	 scalar(@$cells),
-	 ")\n" ) if $self->{colmap}
-	   && @{$self->{colmap}} != @$cells;
+	 ")\n" ) if @{ $self->{_cm} } && ( @{ $self->{_cm} } != @$cells );
 
     # Process the cells.
     for ( my $i = 0; $i < @$cells; $i++ ) {
@@ -616,8 +618,7 @@ sub make_image {
 	    next unless $_;
 	    my $c = $_;
 	    my $font = $cell->sz ? $chrdfont : $chordfont;
-	    my $curcol = $black;
-	    $curcol = $self->{colmap}->[$i] if $self->{colmap};
+	    my $curcol = $self->{_cm}->[$i] // $black;
 
 	    if ( $c =~ /repeat\dBars?/ ) {
 
@@ -719,7 +720,7 @@ sub make_image {
 
 	for ( $cell->subchord ) {
 	    next unless $_;
-	    my $curcol = $self->{colmap}->[$i];
+	    my $curcol = $self->{_cm}->[$i] // $black;
 	    if ( $self->{npp} ) {
 		$self->npp_chord( $x, $y, $_, CHORD_ALTERNATIVE, $curcol );
 	    }
