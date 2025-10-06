@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Wed Sep 14 17:14:47 2022
-# Update Count    : 1644
+# Last Modified On: Mon Oct  6 16:33:19 2025
+# Update Count    : 1651
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -53,6 +53,7 @@ sub new {
 	$CANVAS_WIDTH = $options->{width} if $options->{width};
 	$CANVAS_HEIGHT = $options->{height} if $options->{height};
     }
+    $self->{trim} = $options->{trim};
 
     if ( $options->{npp} ) {
 	die( "Unsupported output type for NPP. Please select PNG or JPG.\n")
@@ -106,7 +107,7 @@ sub new {
 
 sub options {
     my $self = shift;
-    [ @{ $self->SUPER::options }, qw( transpose npp colmap crop
+    [ @{ $self->SUPER::options }, qw( transpose npp colmap crop trim
 				      embed width height rows colums ) ];
 }
 
@@ -799,6 +800,9 @@ sub make_image {
 
     if ( $self->{outtype} =~ /^png|jpg$/ ) {
 	my $did = 0;
+	if ( $self->{trim} ) {
+	    $self->{im} = $self->{im}->trim( auto => 1 );
+	}
 	if ( $self->{npp} && $self->{im}->getheight > CANVAS_HEIGHT ) {
 	    # Scale or split oversized pages.
 	    if ( 1 ) {

@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Wed Sep 14 15:07:52 2022
-# Update Count    : 144
+# Last Modified On: Mon Oct  6 16:35:12 2025
+# Update Count    : 147
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -149,6 +149,7 @@ sub app_setup {
 	  'colums|cols=i',
 	  'colmap=s',
 	  'crop',
+	  'trim',
 	  'transpose|x=i',
 	  'toc!',
 	  'catalog=s',
@@ -238,6 +239,7 @@ irealcvt [options] file [...]
     --npp=[hand|hand_strict|standard]	Near pixel-perfect output.
     --[no]toc		Produces [suppresses] the table of contents.
     --crop		Crop output.
+    --trim		Trim output (JPG/PNG only).
     --colmap XXX	Map NPP glyph colours.
 
   MusicXML input options:
@@ -488,7 +490,7 @@ The iRealPro community, for contributing many, many songs.
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2013,2016 Johan Vromans, all rights reserved.
+Copyright 2013,2016,2025 Johan Vromans, all rights reserved.
 
 Clone me at L<GitHub|https://github.com/sciurius/perl-Data-iRealPro>
 
