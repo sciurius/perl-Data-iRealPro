@@ -61,4 +61,5 @@ pp/windows/GNUmakefile
 pp/windows/irealcvt.pp
 pp/common/irealcvt.pp
 pp/common/PDF_API2_Bundle.pm
+pp/common/Imager_Bundle.pm
 pp/README

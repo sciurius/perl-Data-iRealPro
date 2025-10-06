@@ -1,1 +1,9 @@
 @../common/irealcvt.pp
+--link=c:/Strawberry/c/bin/libpng16-16__.dll
+--link=c:/Strawberry/c/bin/libharfbuzz-0__.dll
+--link=c:/Strawberry/c/bin/zlib1__.dll
+--link=c:/Strawberry/c/bin/libbz2-1__.dll
+--link=c:/Strawberry/c/bin/libfreetype-6__.dll
+--link=c:/Strawberry/c/bin/libgraphite2__.dll
+--link=c:/Strawberry/c/bin/libfreetype-6__.dll
+--link=c:/Strawberry/c/bin/libt1-5__.dll
