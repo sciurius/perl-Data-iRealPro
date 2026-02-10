@@ -1,5 +1,11 @@
 Revision history for Data-iRealPro
 
+1.17	2026-02-10
+
+	Protecxt rendering with some evals.
+	Fix carp calls missing package.
+	Add podman/docker web based uri handler.
+
 1.16	2025-10-06
 
 	Implement colouring of the individual NPP glyphs.
