@@ -61,7 +61,7 @@ sub as_string {
 
 sub export {
     my ( $self, %args ) = @_;
-    carp(__PACKAGE__."::export is deprecated, please use 'as_string' instead");
+    Carp::carp(__PACKAGE__."::export is deprecated, please use 'as_string' instead");
     my $v = $args{variant} || $self->{variant} || "irealpro";
     $args{uriencode} //= !$args{plain};
 

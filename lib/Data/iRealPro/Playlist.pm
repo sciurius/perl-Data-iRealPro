@@ -76,7 +76,7 @@ sub add_songs {
 
 sub export {
     my ( $self, %args ) = @_;
-    carp(__PACKAGE__."::export is deprecated, please use 'as_string' instead");
+    Carp::carp(__PACKAGE__."::export is deprecated, please use 'as_string' instead");
 
     my $v = $args{variant} || $self->{variant} || "irealpro";
     my $dashes = $v eq "irealbook" ? "=" : "===";
@@ -99,7 +99,7 @@ sub as_string {
 
     my $name = $self->{name};
     if ( !$name && @{ $self->{songs} } > 1 ) {
-	carp("Playlist without name in as_string");
+	Carp::carp("Playlist without name in as_string");
 	$name = "NoName";
     }
     $r .= $dashes . $name if $name;
