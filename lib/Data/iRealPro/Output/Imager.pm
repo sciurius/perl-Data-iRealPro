@@ -5,8 +5,8 @@
 # Author          : Johan Vromans
 # Created On      : Fri Jan 15 19:15:00 2016
 # Last Modified By: Johan Vromans
-# Last Modified On: Mon Oct  6 16:33:19 2025
-# Update Count    : 1651
+# Last Modified On: Tue Feb  3 09:13:09 2026
+# Update Count    : 1654
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -155,7 +155,7 @@ sub process {
     # If it is a playlist, assume multiple songs.
     # With --output this must be either a PDF, or
     # contain %d or %t.
-    if ( $plname && @{ $u->{playlist}->{songs} } > 1 ) {
+    if ( $plname && eval { @{ $u->{playlist}->{songs} } } > 1 ) {
 	if ( $self->{output}
 	     && $self->{output} !~ /\%\d*[dt]/
 	     && $self->{output} !~ /\.pdf$/i ) {
@@ -201,7 +201,7 @@ sub process {
     my $csv_fd;
     my $csv_name;
     if ( $outtype eq "pdf"
-	 && @{ $u->{playlist}->{songs} } > 1 ) {
+	 && eval { @{ $u->{playlist}->{songs} } > 1 } ) {
 	$csv_name = $self->{output};
 	$csv_name =~ s/\.pdf$/.csv/i;
 	open( $csv_fd, ">:encoding(utf8)", $csv_name );
