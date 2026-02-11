@@ -3,8 +3,8 @@
 # Author          : Johan Vromans
 # Created On      : Tue Mar  3 11:09:45 2015
 # Last Modified By: Johan Vromans
-# Last Modified On: Tue Feb 10 15:34:56 2026
-# Update Count    : 375
+# Last Modified On: Wed Feb 11 11:24:04 2026
+# Update Count    : 409
 # Status          : Unknown, Use with caution!
 
 ################ Common stuff ################
@@ -62,7 +62,8 @@ $v =~ s/^(.)(....)(.*)/$1.ucfirst($2).ucfirst($3)/e;
 my $irp_site = "https://www.irealpro.com";
 my $irp_icon = datasrc("irealpro-icon.png");
 
-$tv->{site}->{name} = "$v Song viewer";
+$tv->{site}->{name} = "iREAL&#x2009;PRO Song viewer";
+$tv->{site}->{bottom} = "Powered by Perl and Data::iRealPro $Data::iRealPro::VERSION";
 $tv->{irp}->{site} = $irp_site;
 $tv->{irp}->{icon} = $irp_icon;
 $tv->{data}->{raw} = $uri;
@@ -113,6 +114,7 @@ foreach my $s ( @{ $u->{playlist}->{songs} } ) {
     # Generate image.
     Data::iRealPro::Output::Imager->new($options)->process($uri);
 
+    my $sep = " — ";
     push( @songs,
 	  { index => $song,
 	    title =>
@@ -125,16 +127,16 @@ foreach my $s ( @{ $u->{playlist}->{songs} } ) {
 		    "Style: ", $s->{style},
 		    $s->{actual_style}
 		    ? ( " (", $s->{actual_style}, ")" ) : (),
-		    $s->{key} ? ( "; key: ", $s->{key} ) : (),
+		    $s->{key} ? ( "${sep}key: ", $s->{key} ) : (),
 		    $s->{actual_key} ne ''
-		    ? ( "; actual key: ",
+		    ? ( "${sep}actual key: ",
 			$s->{key} =~ /-$/ ? $minkeys[$s->{actual_key}] : $majkeys[$s->{actual_key}] ) : (),
 		    $s->{actual_tempo}
-		    ? ( "; tempo: ", $s->{actual_tempo} ) : (),
+		    ? ( "${sep}tempo: ", $s->{actual_tempo} ) : (),
 		    $s->{actual_repeats} && $s->{actual_repeats} > 1
-		    ? ( "; repeat: ", $s->{actual_repeats} ) : (),
+		    ? ( "${sep}repeat: ", $s->{actual_repeats} ) : (),
 		    $s->{a2}
-		    ? ( "; a2: ", $s->{a2} ) : (),
+		    ? ( "${sep}a2: ", $s->{a2} ) : (),
 		  ),
 	    cooked => $s->{data},
 	    rows => 10,
@@ -185,29 +187,55 @@ sub tpl_playlist {
 <title>[% site.name %]</title>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <style>
+* {
+  font-family: "sans", "sans-serif";
+}
+body {
+   max-width: 900px;
+   margin: auto;
+   background: lightblue;
+}
+div.outer {
+   margin: auto;
+   width: 100%;
+}
+h1 {
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 0pt;
+}
 p.title {
   font-weight: bold;
   margin-bottom: 0pt;
+  margin-top: 0pt;
+  text-align: center;
 }
 p.subtitle {
   margin-top: 0pt;
   margin-bottom: 0pt;
+  text-align: center;
 }
-textarea.uri {
-  font-family: "courier", "monospace";
-}
-textarea.irealbook {
-  font-family: "courier", "monospace";
+p.image {
+  text-align: center;
 }
 img.image {
   width: 833px;
+  padding: 5px;
   border: 1px solid black;
+}
+p.bottom {
+  margin-top: 0pt;
+  margin-bottom: 0pt;
+  text-align: center;
+  font-family: "mono", "monospace";
+  font-size: 60%;
 }
 </style>
 </head>
 <body>
+  <dov class="outer">
   <h1>
-    <a href="[% irp.site %]"><img src="[% irp.icon %]" height="72" width="72"></a>
+    iRPWeb&#x2001;<a href="[% irp.site %]"><img src="[% irp.icon %]" height="32" width="32"></a>
     [% site.name %]
   </h1>
   [% IF playlist.name %]
@@ -218,7 +246,8 @@ img.image {
   <p class="subtitle">[% song.subtitle %]</p>
   <p class="image"><img class="image" src="[% song.image %]"></p>
   [% END %]
-  <hr>
+  <p class="bottom">[% site.bottom %]</p>
+  </div>
 </body>
 </html>
 EOD

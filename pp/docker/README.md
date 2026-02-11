@@ -2,15 +2,17 @@
 
 ## Build
 
-_Use the Makefile_
+_Use the Makefile: `make`_
 
-    docker build -t irpweb/irpweb:v1.16 .
-    docker tag irpweb/irpweb:v1.16 irpweb/irpweb:latest
+    docker build -t irpweb/irpweb:vx.yy .
+    docker tag irpweb/irpweb:vx.yy irpweb/irpweb:latest
 
 ## Push to repo
 
+_Use the Makefile: `make publish`_
+
     docker push irpweb/irpweb:latest
-    docker push irpweb/irpweb:v1.16
+    docker push irpweb/irpweb:vx.yy
 
 ## Running irpweb
 
@@ -21,6 +23,11 @@ Podman:
 Docker:
 
 	docker run --rm --publish 5000:5000 irpweb/irpweb:latest
+
+## irpweb script
+
+The `irpweb` script can be used to conveniently start and stop the
+server.
 
 ## Notes
 

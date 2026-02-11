@@ -20,11 +20,9 @@ clean ::
 
 npp ::
 	tar zcf npp.tar.gz -C ../../lib/Data/iRealPro/res \
-	    drawable-nodpi-v4 fonts prefab
+	    drawable-nodpi-v4 fonts
 
-# publish:
-#
-# docker tag irpweb/irpweb:latest irpweb/irpweb:v1.16
-# docker push irpweb/irpweb:v1.16
-# docker push irpweb/irpweb:latest
+publish:
+	docker push irpweb/irpweb:v${VERSION}
+	docker push irpweb/irpweb:latest
 
