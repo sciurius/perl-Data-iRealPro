@@ -11,6 +11,11 @@ default :: Dockerfile.tmp npp
 	    --tag irpweb/irpweb:v${VERSION} \
 	    --tag irpweb/irpweb:latest .
 
+dev :: Dockerfile npp
+	tar zcf Data-iRealPro-dev.tar.gz -C../.. -T../../MANIFEST 
+	${DOCKER} build ${BUILDARGS} --file Dockerfile \
+	    --tag irpweb/irpweb:dev .
+
 Dockerfile.tmp : Dockerfile
 	perl -pe 's;RUN cpanm Data::iRealPro;RUN cpanm ${KIT};' \
 	    $< > $@

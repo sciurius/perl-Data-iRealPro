@@ -46,3 +46,22 @@ COPY server.pl irealpro.cgi irealpro-icon.png .
 # Default listen to all, port 5000.
 EXPOSE 5000
 ENTRYPOINT [ "perl", "server.pl" ]
+
+FROM base AS irpweb-dev
+COPY Data-iRealPro-dev.tar.gz npp.tar.gz .
+RUN mkdir build; \
+    tar xf Data-iRealPro-dev.tar.gz -C build; \
+    tar xf npp.tar.gz -C build/lib/Data/iRealPro/res; \
+    cd build; \
+    perl Makefile.PL; \
+    make; \
+    make test; \
+    make install; \
+    cd ..; \
+    rm -fr build Data-iRealPro-dev.tar.gz npp.tar.gz
+
+COPY server.pl irealpro.cgi irealpro-icon.png .
+
+# Default listen to all, port 5000.
+EXPOSE 5000
+ENTRYPOINT [ "perl", "server.pl" ]
